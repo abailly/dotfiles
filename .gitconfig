@@ -1,0 +1,19 @@
+[user]
+	name = Arnaud Bailly
+	email = arnaud.oqube@gmail.com
+	signkey = 7ED943C3
+[alias]
+	s = status
+	l = log --oneline --graph --decorate
+	ci = commit
+	co = checkout
+	sub = submodule
+[push]
+	default = simple
+[sendemail]
+  smtpencryption = tls
+  smtpserver = smtp.gmail.com
+  smtpuser = arnaud.oqube@gmail.com
+  smtpserverport = 587
+[core]
+	autocrlf = input
