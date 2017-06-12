@@ -314,10 +314,15 @@ layers configuration.
 This is the place where most of your configurations should be done. Unless it is
 explicitly specified that a variable should be set before a package is loaded,
 you should place your code here."
+  (set-frame-parameter (selected-frame) 'alpha '(80 80))
   (setq fill-column 132)
   (global-linum-mode)
   (setq org-directory "~/log")
   (setq org-agenda-files '("~/log/"))
+  ;; stylish haskell formatting
+  (setq haskell-stylish-on-save t)
+  (setq haskell-tags-on-save t)
+
   
   (global-set-key "\C-cl" 'org-store-link)
   (global-set-key "\C-cr" 'org-capture)
