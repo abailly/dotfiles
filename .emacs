@@ -2,12 +2,15 @@
 
 ;; package installation
 (require 'package)
-(add-to-list 'package-archives
-             '("marmalade" . "http://marmalade-repo.org/packages/"))
+;; (add-to-list 'package-archives
+;;              '("marmalade" . "http://marmalade-repo.org/packages/"))
 (add-to-list 'package-archives
              '("melpa" . "http://melpa.org/packages/"))
 
 (package-initialize)
+
+(setq default-frame-alist
+      '((fullscreen . maximized) (fullscreen-restore . fullheight)))
 
 ;;; Code:
 (add-hook 'window-setup-hook
@@ -15,18 +18,58 @@
             ;; font setting
            (set-frame-parameter (selected-frame) 'alpha '(80 80))
            (set-face-background 'hl-line "#ff0")
-	   (set-face-attribute 'default nil
-                    :background "white"
-                    :foreground "black"
-                    :family "Monaco"
-                    :height 140)
-
+           (set-face-attribute 'default nil
+                               :background "white"
+                               :foreground "black"
+                               :family "Monaco"
+                               :height 140)
+           
            ))
+
 
 (setq fill-column 132)
 (global-set-key "\C-cg" 'goto-line)
+(global-set-key "\C-c\C-g" 'rgrep)
 
 (global-hl-line-mode 1)
+
+;; https://github.com/emacsmirror/expand-region
+(require 'expand-region)
+(global-set-key (kbd "C-=") 'er/expand-region)
+
+;; helm
+;; from http://tuhdo.github.io/helm-intro.html
+(require 'helm)
+(require 'helm-config)
+
+;; The default "C-x c" is quite close to "C-x C-c", which quits Emacs.
+;; Changed to "C-c h". Note: We must set "C-c h" globally, because we
+;; cannot change `helm-command-prefix-key' once `helm-config' is loaded.
+(global-set-key (kbd "C-c h") 'helm-command-prefix)
+(global-unset-key (kbd "C-x c"))
+(global-unset-key (kbd "M-x"))
+(global-set-key (kbd "M-x") 'helm-M-x)
+(global-set-key (kbd "C-x C-f") #'helm-find-files)
+
+(define-key helm-map (kbd "<tab>") 'helm-execute-persistent-action) ; rebind tab to run persistent action
+(define-key helm-map (kbd "C-i") 'helm-execute-persistent-action) ; make TAB work in terminal
+(define-key helm-map (kbd "C-z")  'helm-select-action) ; list actions using C-z
+
+(when (executable-find "curl")
+  (setq helm-google-suggest-use-curl-p t))
+
+(setq helm-split-window-in-side-p           t ; open helm buffer inside current window, not occupy whole other window
+      helm-move-to-line-cycle-in-source     t ; move to end or beginning of source when reaching top or bottom of source.
+      helm-ff-search-library-in-sexp        t ; search for library in `require' and `declare-function' sexp.
+      helm-scroll-amount                    8 ; scroll 8 lines other window using M-<next>/M-<prior>
+      helm-ff-file-name-history-use-recentf t
+      helm-echo-input-in-header-line t)
+
+(setq helm-autoresize-max-height 0)
+(setq helm-autoresize-min-height 20)
+(helm-autoresize-mode 1)
+
+(helm-mode 1)
 
 ;; to input pinyin accented chars using right option/alt key
 (setq mac-right-option-modifier 'none)
@@ -52,8 +95,12 @@
          "*** TODO %?\n  %i\n  %a")
         ("j" "Journal" entry (file+datetree "~/log/journal.org")
          "* %?\nEntered on %U\n  %i\n  %a")
-        ("x" "Capture" entry (file+datetree "~/log/journal.org")
-         "* %c" :immediate-finish t)))
+        ("s" "Symbiont" entry (file+datetree "~/log/symbiont.org")
+         "* %?\nEntered on %U\n  %i\n  %a")
+        ("p" "Capture" entry (file+datetree "~/log/journal.org")
+         "* %c\n%i" :immediate-finish t)
+        ("L" "Capture link" entry (file+datetree "~/log/journal.org")
+         "* %? [[%:link][%:description]] \nCaptured On: %U" :immediate-finish t)))
 
 (add-hook 'org-mode-hook 'auto-fill-mode)
 
@@ -100,13 +147,13 @@
 (global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
 
 ;; flx
-(require 'flx-ido)
-(ido-mode 1)
-(ido-everywhere 1)
-(flx-ido-mode 1)
+;; (require 'flx-ido)
+;; (ido-mode 1)
+;; (ido-everywhere 1)
+;; (flx-ido-mode 1)
 
-;; disable ido faces to see flx highlights.
-(setq ido-use-faces nil)
+;; ;; disable ido faces to see flx highlights.
+;; (setq ido-use-faces nil)
 
 ;; use space for indentation, 2 spaces wide
 (setq-default indent-tabs-mode nil)
@@ -122,6 +169,13 @@
 (add-hook 'find-file-hook 'sm-try-smerge t)
 
 ;; Haskell stuff
+(setenv "PATH" (concat (getenv "HOME") "/.local/bin:" "/usr/local/bin:" (getenv "PATH")))
+(setq exec-path
+      (reverse
+       (append
+        (reverse exec-path)
+        (list (concat (getenv "HOME") "/.local/bin")  "/usr/local/bin" ))))
+
 (add-hook 'haskell-mode-hook 'intero-mode)
 (add-hook 'haskell-mode-hook 'linum-mode)
 
@@ -140,54 +194,79 @@
 (setq elm-format-on-save t)
 (setq elm-tags-exclude-elm-stuff nil)
 
-;; load correct tags file for current file
-(defun find-file-upwards (file-to-find)
-  "Recursively searches each parent directory starting from the default-directory.
-looking for a file with name file-to-find.  Returns the path to it
-or nil if not found."
-  (labels
-      ((find-file-r (path)
-                    (let* ((parent (file-name-directory path))
-                           (possible-file (concat parent file-to-find)))
-                      (cond
-                       ((file-exists-p possible-file) possible-file) ; Found
-                       ;; The parent of ~ is nil and the parent of / is itself.
-                       ;; Thus the terminating condition for not finding the file
-                       ;; accounts for both.
-                       ((or (null parent) (equal parent (directory-file-name parent))) nil) ; Not found
-                       (t (find-file-r (directory-file-name parent))))))) ; Continue
-    (find-file-r default-directory)))
-
-(defun load-tags ()
-  (let ((my-tags-file (find-file-upwards "TAGS")))
-    (when my-tags-file
-      (if (not (equal tags-file-name my-tags-file))
-          (progn
-            (message "Loading tags file: %s" my-tags-file)
-            (setq tags-file-name nil)
-            (setq tags-table-list nil)
-            (visit-tags-table my-tags-file)
-            )))))
-
-(add-hook 'elm-mode-hook 'load-tags)
-(add-hook 'find-file-hook 'load-tags)
-
-(defun switch-to-buffer-and-load-tags ()
-  (interactive)
-  (ido-switch-buffer)
-  (load-tags))
-
-(defun goto-tag-at-point ()
-  "Go to tag at point."
-  (interactive)
-  (let ((tag (find-tag-default)))
-    (unless tag
-      (user-error "No tag candidate found around point"))
-    (find-tag tag)))
-
-(global-set-key "\C-xb" 'switch-to-buffer-and-load-tags)
-
 ;; magit
 (require 'magit)
 (global-set-key "\C-xg" 'magit-status)
 (global-set-key (kbd "C-x M-g") 'magit-dispatch-popup)
+
+;; markdown
+(require 'markdown-mode)
+(setq markdown-command "pandoc -s --highlight-style pygments")
+
+;; Proof General
+(require 'proof-site "~/.emacs.d/lisp/PG/generic/proof-site")
+
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   (quote
+    (magit expand-region company-go go-autocomplete go-complete go-mode go company-coq helm-core helm helm-ag-r helm-company helm-git helm-google helm-hoogle helm-idris helm-ls-git markdown-mode multiple-cursors magit-gh-pulls intero flx-isearch flx-ido)))
+ '(safe-local-variable-values
+   (quote
+    ((haskell-indentation-where-pre-offset . 4)
+     (haskell-indentation-starter-offset . 4)
+     (haskell-indentation-left-offset . 4)
+     (haskell-indentation-layout-offset . 4)
+     (haskell-indent-spaces . 4)
+     (intero-targets "deptrack-core:lib" "deptrack-devops:lib" "deptrack-devops-examples:lib" "deptrack-devops-examples:exe:deptrack-devops-example-devbox" "deptrack-devops-recipes:lib")
+     (intero-targets "sym-test:lib" "sym-test:exe:test-runner" "sym-test:test:tasty" "txe:lib" "txe:exe:humanize" "txe:exe:txe" "txe:test:tasty")
+     (intero-targets "sym-client:lib" "sym-client:test:tasty" "sym-test:lib" "sym-test:exe:test-runner" "sym-test:test:tasty")
+     (intero-targets "sym-client:lib" "sym-test:lib" "sym-test:exe:test-runner" "sym-test:test:tasty")
+     (intero-targets "sym-client:lib" "sym-core:lib" "sym-test:lib" "sym-test:exe:test-runner" "sym-test:test:tasty")
+     (intero-targets "sym-client:lib" "sym-core:lib" "sym-crypto:lib" "sym-test:lib" "sym-test:exe:test-runner" "sym-test:test:tasty")
+     (intero-targets "sym-client:lib" "sym-core:lib" "txe:lib")
+     (intero-targets "sym-client:lib" "txe:lib")
+     (intero-targets "sym-client:lib" "sym-crypto:lib" "sym-http:lib" "sym-logging:lib" "sym-test:lib" "sym-test:exe:test-runner" "sym-test:test:tasty" "sym-util:lib" "txe:lib")
+     (intero-targets "sym-logging:lib" "sym-logging:test:tasty" "txe:lib" "txe:exe:humanize" "txe:exe:txe" "txe:test:tasty")
+     (intero-targets "sym-test:lib" "sym-test:exe:test-runner" "sym-test:test:tasty")
+     (intero-targets "sym-client:lib" "sym-client:exe:contract" "sym-client:test:tasty" "sym-test:lib" "sym-test:exe:test-smartlog" "sym-test:test:tasty" "sym-util:lib" "sym-util:test:tasty" "txe:lib" "txe:exe:humanize" "txe:exe:txe" "txe:test:tasty")
+     (intero-targets "sym-client:lib" "sym-client:exe:contract" "sym-client:test:tasty" "sym-test:lib" "sym-test:exe:test-smartlog" "sym-test:test:tasty" "sym-util:lib" "sym-util:test:tasty")
+     (intero-targets "sym-client:lib" "sym-client:test:tasty" "txe:lib" "txe:exe:humanize" "txe:exe:txe" "txe:test:tasty")
+     (intero-targets "sym-client:lib" "sym-client:test:tasty" "sym-util:lib" "sym-util:test:tasty" "txe:lib" "txe:exe:txe" "txe:test:tasty")
+     (intero-targets "sym-client:lib" "sym-client:test:contract" "sym-client:test:tasty" "sym-util:lib" "sym-util:test:tasty")
+     (intero-targets "sym-client:lib" "sym-client:test:tasty" "sym-util:lib" "sym-util:test:tasty")
+     (intero-targets "sym-util:lib" "sym-util:test:tasty" "txe:lib" "txe:exe:humanize" "txe:exe:txe" "txe:test:tasty")
+     (intero-targets "txe:lib" "txe:exe:humanize" "txe:exe:txe" "txe:test:tasty")
+     (intero-targets "sym-http:lib" "sym-http:test:tasty")
+     (intero-targets "sym-http:lib" "sym-http:test:tasty" "sym-logging:lib" "sym-logging:test:tasty" "sym-util:lib" "sym-util:test:tasty" "txe:lib" "txe:exe:txe" "txe:test:tasty")
+     (intero-targets "sym-client:lib" "sym-client:test:tasty" "sym-http:lib" "sym-http:test:tasty" "sym-logging:lib" "sym-logging:test:tasty" "sym-util:lib" "sym-util:test:tasty" "txe:lib" "txe:exe:txe" "txe:test:tasty")
+     (intero-targets "sym-client:lib" "sym-client:test:tasty" "sym-test:lib" "sym-test:exe:test-smartlog" "sym-test:test:tasty" "sym-util:lib" "sym-util:test:tasty")
+     (intero-targets "sym-client:lib" "sym-client:test:tasty" "sym-test:lib" "sym-test:exe:test-smartlog" "sym-test:test:tasty")
+     (intero-targets "sym-logging:lib" "sym-logging:test:tasty" "sym-util:lib" "sym-util:test:tasty")
+     (coq-prog-args "-emacs" "-R" "/Users/arnaud/projects/cpdt/src" "Cpdt")
+     (coq-prog-args "-emacs" "-R" "src" "Cpdt")
+     (intero-targets "sym-cli:lib" "sym-test:lib" "sym-test:exe:test-smartlog" "sym-test:test:tasty" "txe:lib")
+     (intero-targets "foo:lib" "foo:exe:foo-cli" "foo:exe:foo-service" "foo:test:tasty")
+     (haskell-stylish-on-save)
+     (stylish-haskell-on-save)
+     (intero-targets "sym-cli:lib" "sym-cli:exe:symbiont" "sym-cli:test:tasty" "sym-http:lib" "sym-http:test:tasty" "sym-logging:lib" "sym-util:lib" "sym-util:test:tasty")
+     (intero-targets "sym-cli:lib" "sym-test:lib" "sym-test:exe:test-assembly" "sym-test:test:tasty" "txe:lib")
+     (intero-targets "sym-logging:lib" "sym-logging:test:tasty" "sym-util:lib" "sym-util:test:tasty" "txe:lib" "txe:exe:txe" "txe:test:tasty")
+     (intero-targets "sym-proto:lib" "sym-proto:test:tasty")
+     (intero-targets "sym-util:lib" "sym-util:test:tasty" "txe:lib" "txe:exe:txe" "txe:test:tasty")
+     (intero-targets "sym-logging:lib" "sym-logging:test:tasty" "txe:lib" "txe:exe:txe" "txe:test:tasty")
+     (intero-targets "txe:lib" "txe:exe:txe" "txe:test:tasty")
+     (intero-targets "sym-crypto:lib" "sym-logging:lib" "sym-test:lib" "sym-test:exe:test-assembly" "sym-test:test:tasty" "sym-util:lib" "txe:lib")))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
+
+
+(load-file (let ((coding-system-for-read 'utf-8))
+                (shell-command-to-string "agda-mode locate")))

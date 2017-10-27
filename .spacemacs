@@ -38,11 +38,10 @@ values."
      ;; <M-m f e R> (Emacs style) to install them.
      ;; ----------------------------------------------------------------
      helm
-     intero
      auto-completion
-     ;;haskell
-     ;;(auto-completion
-     ;;  (haskell :variables haskell-completion-backend 'intero))
+     haskell
+     (auto-completion
+      (haskell :variables haskell-completion-backend 'intero))
      ;; better-defaults
      emacs-lisp
      git
