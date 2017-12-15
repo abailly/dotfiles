@@ -11,6 +11,6 @@
 					; install package if not already installed
           (unless (package-installed-p package)
             (package-install package)))
-	
-        '(magit intero helm markdown-mode multiple-cursors expand-region yasnippet color-theme 
-		google-translate google-translate-default-ui))
+
+        '(magit intero helm markdown-mode multiple-cursors expand-region yasnippet color-theme
+          idris elpy prop-menu google-translate))

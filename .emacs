@@ -211,9 +211,6 @@
 (require 'markdown-mode)
 (setq markdown-command "pandoc -s --highlight-style pygments")
 
-;; Proof General
-(require 'proof-site "~/.emacs.d/lisp/PG/generic/proof-site")
-
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
