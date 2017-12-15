@@ -23,14 +23,18 @@
                                :foreground "black"
                                :family "Monaco"
                                :height 140)
-           
+
            ))
 
+(global-set-key (kbd "C-x M-a") "α")
+(global-set-key (kbd "C-x M-b") "β")
+(global-set-key (kbd "C-x M-l") "λ")
 
 (setq fill-column 132)
 (global-set-key "\C-cg" 'goto-line)
 (global-set-key "\C-c\C-g" 'rgrep)
-
+(setq require-final-newline t)
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
 (global-hl-line-mode 1)
 
 ;; https://github.com/emacsmirror/expand-region
@@ -176,6 +180,10 @@
         (reverse exec-path)
         (list (concat (getenv "HOME") "/.local/bin")  "/usr/local/bin" ))))
 
+(require 'intero)
+(require 'flycheck)
+(flycheck-add-next-checker 'intero '(warning . haskell-hlint))
+
 (add-hook 'haskell-mode-hook 'intero-mode)
 (add-hook 'haskell-mode-hook 'linum-mode)
 
@@ -268,5 +276,18 @@
  )
 
 
-(load-file (let ((coding-system-for-read 'utf-8))
-                (shell-command-to-string "agda-mode locate")))
+;; https://github.com/atykhonov/google-translate
+(require 'google-translate)
+(require 'google-translate-default-ui)
+(global-set-key "\C-ct" 'google-translate-at-point)
+(global-set-key "\C-cT" 'google-translate-query-translate)
+
+;; Python
+;; requires (package-install 'elpy)
+;; https://github.com/jorgenschaefer/elpy
+(elpy-enable)
+
+;; Idris
+;; development mode
+;; (add-to-list 'load-path (concat (getenv "HOME") "/projects/idris/idris-mode"))
+(require 'idris-mode)

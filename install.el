@@ -12,4 +12,5 @@
           (unless (package-installed-p package)
             (package-install package)))
 	
-        '(magit intero helm markdown-mode multiple-cursors expand-region yasnippet color-theme))
+        '(magit intero helm markdown-mode multiple-cursors expand-region yasnippet color-theme 
+		google-translate google-translate-default-ui))
