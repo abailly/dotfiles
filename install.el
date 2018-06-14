@@ -13,4 +13,4 @@
             (package-install package)))
 
         '(magit intero helm markdown-mode multiple-cursors expand-region yasnippet color-theme
-          idris elpy prop-menu google-translate))
+          elpy prop-menu google-translate))
