@@ -21,13 +21,14 @@
            (set-face-attribute 'default nil
                                :background "white"
                                :foreground "black"
-                               :family "Monaco"
+                               :family "Source Code Pro"
                                :height 140)
 
            ))
 
 (global-set-key (kbd "C-x M-a") "α")
 (global-set-key (kbd "C-x M-b") "β")
+(global-set-key (kbd "C-x M-d") "δ")
 (global-set-key (kbd "C-x M-l") "λ")
 
 (setq fill-column 132)
@@ -71,6 +72,7 @@
 
 (setq helm-autoresize-max-height 0)
 (setq helm-autoresize-min-height 20)
+(setq helm-mode-fuzzy-match t)
 (helm-autoresize-mode 1)
 
 (helm-mode 1)
@@ -286,5 +288,75 @@
 
 ;; Idris
 ;; development mode
-;; (add-to-list 'load-path (concat (getenv "HOME") "/projects/idris/idris-mode"))
+(add-to-list 'load-path (concat (getenv "HOME") "/projects/idris/idris-mode"))
 (require 'idris-mode)
+
+;; projectile
+(require 'projectile)
+(define-key projectile-mode-map (kbd "s-p") 'projectile-command-map)
+(define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
+(projectile-mode +1)
+
+;; elfeed
+(use-package elfeed
+  :ensure t)
+
+(setq elfeed-feeds
+      '("https://abailly.github.io/atom.xml"
+        "http://planet.emacsen.org/atom.xml"
+        "https://reasonablypolymorphic.com/feed.rss"))
+
+(global-set-key (kbd "C-x w") 'elfeed)
+
+;; yaml
+(require 'yaml-mode)
+
+;; javascript
+(require 'js2-mode)
+(require 'js2-refactor)
+(require 'xref-js2)
+
+(add-to-list 'auto-mode-alist '("\\.js\\'" . js2-mode))
+
+(add-hook 'js2-mode-hook #'js2-refactor-mode)
+(js2r-add-keybindings-with-prefix "C-c C-r")
+(define-key js2-mode-map (kbd "C-k") #'js2r-kill)
+
+;; js-mode (which js2 is based on) binds "M-." which conflicts with xref, so
+;; unbind it.
+(define-key js-mode-map (kbd "M-.") nil)
+
+(add-hook 'js2-mode-hook (lambda ()
+  (add-hook 'xref-backend-functions #'xref-js2-xref-backend nil t)))
+
+(require 'typescript-mode)
+(require 'ansi-color)
+(defun colorize-compilation-buffer ()
+  (ansi-color-apply-on-region compilation-filter-start (point-max)))
+(add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
+
+(require 'web-mode)
+(add-to-list 'auto-mode-alist '("\\.tsx\\'" . web-mode))
+(add-hook 'web-mode-hook
+          (lambda ()
+            (when (string-equal "tsx" (file-name-extension buffer-file-name))
+              (setup-tide-mode))))
+
+;; enable typescript-tslint checker
+(flycheck-add-mode 'typescript-tslint 'web-mode)
+
+;; supports .editorconfig file in project
+(use-package editorconfig
+  :ensure t
+  :config
+  (editorconfig-mode 1))
+
+;; elm
+(require 'elm-mode)
+
+;; terraform
+(require 'terraform-mode)
+
+;; shellcheck
+;;http://www.skybert.net/emacs/bash-linting-in-emacs/
+(add-hook 'sh-mode-hook 'flycheck-mode)
