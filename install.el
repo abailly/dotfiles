@@ -12,5 +12,15 @@
           (unless (package-installed-p package)
             (package-install package)))
 
-        '(magit intero helm markdown-mode multiple-cursors expand-region yasnippet color-theme
-          elpy prop-menu google-translate))
+        '(magit
+          intero
+          helm
+          markdown-mode
+          multiple-cursors
+          expand-region
+          yasnippet
+          color-theme
+          elpy
+          prop-menu
+          google-translate
+          use-package))
