@@ -286,5 +286,5 @@
 
 ;; Idris
 ;; development mode
-;; (add-to-list 'load-path (concat (getenv "HOME") "/projects/idris/idris-mode"))
+(add-to-list 'load-path (concat (getenv "HOME") "/projects/idris/idris-mode"))
 (require 'idris-mode)
