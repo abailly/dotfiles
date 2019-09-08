@@ -176,6 +176,7 @@
 
 ;; Haskell stuff
 (setenv "PATH" (concat (getenv "HOME") "/.local/bin:" "/usr/local/bin:" (getenv "PATH")))
+
 (setq exec-path
       (reverse
        (append

@@ -19,8 +19,17 @@
           multiple-cursors
           expand-region
           yasnippet
+          js2-mode
+          js2-refactor
+          xref-js2
+          typescript-mode
+          web-mode
           color-theme
           elpy
           prop-menu
           google-translate
-          use-package))
+          projectile
+          yaml-mode
+          use-package
+          elm-mode
+          terraform-mode))
