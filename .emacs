@@ -2,8 +2,6 @@
 
 ;; package installation
 (require 'package)
-;; (add-to-list 'package-archives
-;;              '("marmalade" . "http://marmalade-repo.org/packages/"))
 (add-to-list 'package-archives
              '("melpa" . "http://melpa.org/packages/"))
 
@@ -221,10 +219,11 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (magit expand-region company-go go-autocomplete go-complete go-mode go company-coq helm-core helm helm-ag-r helm-company helm-git helm-google helm-hoogle helm-idris helm-ls-git markdown-mode multiple-cursors magit-gh-pulls intero flx-isearch flx-ido)))
+    (ag magit expand-region company-go go-autocomplete go-complete go-mode go company-coq helm-core helm helm-ag-r helm-company helm-git helm-google helm-hoogle helm-idris helm-ls-git markdown-mode multiple-cursors magit-gh-pulls intero flx-isearch flx-ido)))
  '(safe-local-variable-values
    (quote
-    ((haskell-indentation-where-pre-offset . 4)
+    ((intero-targets "haskell-sqlite:lib" "haskell-sqlite:exe:haskell-sqlite-exe" "haskell-sqlite:test:haskell-sqlite-test")
+     (haskell-indentation-where-pre-offset . 4)
      (haskell-indentation-starter-offset . 4)
      (haskell-indentation-left-offset . 4)
      (haskell-indentation-layout-offset . 4)

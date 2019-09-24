@@ -29,3 +29,6 @@ if [ -f "${SSH_ENV}" ]; then
 else
     start_agent;
 fi
+
+test -e "${HOME}/.iterm2_shell_integration.bash" && source "${HOME}/.iterm2_shell_integration.bash"
+
