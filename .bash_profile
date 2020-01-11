@@ -2,6 +2,7 @@ export PATH=/Applications/Emacs.app/Contents/MacOS/:/Applications/Emacs.app/Cont
 export PATH=${HOME}/.local/bin:${PATH}
 export PATH=${HOME}/.idris2/bin:${PATH}
 export PATH="/Applications/Postgres.app/Contents/Versions/latest/bin:$PATH"
+export PATH="/Applications/Racket v7.4/bin:$PATH"
 export GOPATH=${HOME}/go
 alias ec="emacsclient -c"
 alias g=git
@@ -32,3 +33,6 @@ fi
 
 test -e "${HOME}/.iterm2_shell_integration.bash" && source "${HOME}/.iterm2_shell_integration.bash"
 
+
+export PATH="$HOME/.cargo/bin:$PATH"
+. ~/.bashrc
