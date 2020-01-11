@@ -223,12 +223,18 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(idris-log-events t)
  '(package-selected-packages
    (quote
-    (ag magit expand-region company-go go-autocomplete go-complete go-mode go company-coq helm-core helm helm-ag-r helm-company helm-git helm-google helm-hoogle helm-idris helm-ls-git markdown-mode multiple-cursors magit-gh-pulls intero flx-isearch flx-ido)))
+    (ess dockerfile-mode org-mu4e mu4e org-mime ag magit expand-region company-go go-autocomplete go-complete go-mode go company-coq helm-core helm helm-ag-r helm-company helm-git helm-google helm-hoogle helm-idris helm-ls-git markdown-mode multiple-cursors magit-gh-pulls intero flx-isearch flx-ido)))
  '(safe-local-variable-values
    (quote
-    ((intero-targets "haskell-sqlite:lib" "haskell-sqlite:exe:haskell-sqlite-exe" "haskell-sqlite:test:haskell-sqlite-test")
+    ((intero-targets "circuit-breaker:lib" "circuit-breaker:exe:circuit-breaker" "circuit-breaker:test:circuit-breaker-test" "log-controller:lib" "log-controller:exe:control" "log-controller:test:log-controller-test" "one-log:lib" "one-log:exe:one-log-exe" "one-log:test:one-log-test" "pet-store:lib" "pet-store:exe:driver-petstore" "pet-store:exe:mock-petstore" "pet-store:test:tests" "pet-store-backend:lib" "pet-store-backend:exe:pet-store-server")
+     (time-stamp-active . t)
+     (intero-targets "day7:exe:day7" "intcode:lib")
+     (intero-targets "day7:exe:day7")
+     (intero-targets "survey:lib" "survey:exe:quizz" "survey:test:survey-test")
+     (intero-targets "haskell-sqlite:lib" "haskell-sqlite:exe:haskell-sqlite-exe" "haskell-sqlite:test:haskell-sqlite-test")
      (haskell-indentation-where-pre-offset . 4)
      (haskell-indentation-starter-offset . 4)
      (haskell-indentation-left-offset . 4)
@@ -315,12 +321,16 @@
 (global-set-key (kbd "C-x w") 'elfeed)
 
 ;; yaml
-(require 'yaml-mode)
+(use-package yaml-mode
+  :ensure t)
 
 ;; javascript
-(require 'js2-mode)
-(require 'js2-refactor)
-(require 'xref-js2)
+(use-package js2-mode
+  :ensure t)
+(use-package js2-refactor
+  :ensure t)
+(use-package xref-js2
+  :ensure t)
 
 (add-to-list 'auto-mode-alist '("\\.js\\'" . js2-mode))
 
@@ -335,13 +345,16 @@
 (add-hook 'js2-mode-hook (lambda ()
   (add-hook 'xref-backend-functions #'xref-js2-xref-backend nil t)))
 
-(require 'typescript-mode)
-(require 'ansi-color)
+(use-package typescript-mode
+ :ensure t)
+(use-package ansi-color
+ :ensure t)
 (defun colorize-compilation-buffer ()
   (ansi-color-apply-on-region compilation-filter-start (point-max)))
 (add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
 
-(require 'web-mode)
+(use-package web-mode
+ :ensure t)
 (add-to-list 'auto-mode-alist '("\\.tsx\\'" . web-mode))
 (add-hook 'web-mode-hook
           (lambda ()
@@ -358,11 +371,229 @@
   (editorconfig-mode 1))
 
 ;; elm
-(require 'elm-mode)
+(use-package elm-mode
+ :ensure t)
 
 ;; terraform
-(require 'terraform-mode)
+(use-package terraform-mode
+ :ensure t)
 
 ;; shellcheck
 ;;http://www.skybert.net/emacs/bash-linting-in-emacs/
 (add-hook 'sh-mode-hook 'flycheck-mode)
+
+;; mu4e
+;; from https://www.reddit.com/r/emacs/comments/bfsck6/mu4e_for_dummies/
+(use-package org-mime
+ :ensure t)
+
+(add-to-list 'load-path "/usr/local/share/emacs/site-lisp/mu/mu4e")
+(require 'mu4e)
+
+(setq mu4e-maildir (expand-file-name "~/Maildir"))
+
+; get mail
+(setq mu4e-get-mail-command "mbsync -c ~/.emacs.d/mu4e/.mbsyncrc -a"
+  ;; mu4e-html2text-command "w3m -T text/html" ;;using the default mu4e-shr2text
+  mu4e-view-prefer-html t
+  mu4e-update-interval 180
+  mu4e-headers-auto-update t
+  mu4e-compose-format-flowed t)
+
+;; to view selected message in the browser, no signin, just html mail
+(add-to-list 'mu4e-view-actions
+  '("ViewInBrowser" . mu4e-action-view-in-browser) t)
+
+;; enable inline images
+(setq mu4e-view-show-images t)
+;; use imagemagick, if available
+(when (fboundp 'imagemagick-register-types)
+  (imagemagick-register-types))
+
+;; every new email composition gets its own frame!
+(setq mu4e-compose-in-new-frame t)
+
+;; don't save message to Sent Messages, IMAP takes care of this
+(setq mu4e-sent-messages-behavior 'delete)
+
+(add-hook 'mu4e-view-mode-hook #'visual-line-mode)
+
+;; <tab> to navigate to links, <RET> to open them in browser
+(add-hook 'mu4e-view-mode-hook
+  (lambda()
+;; try to emulate some of the eww key-bindings
+(local-set-key (kbd "<RET>") 'mu4e~view-browse-url-from-binding)
+(local-set-key (kbd "<tab>") 'shr-next-link)
+(local-set-key (kbd "<backtab>") 'shr-previous-link)))
+
+;; from https://www.reddit.com/r/emacs/comments/bfsck6/mu4e_for_dummies/elgoumx
+(add-hook 'mu4e-headers-mode-hook
+      (defun my/mu4e-change-headers ()
+	(interactive)
+	(setq mu4e-headers-fields
+	      `((:human-date . 25) ;; alternatively, use :date
+		(:flags . 6)
+		(:from . 22)
+		(:thread-subject . ,(- (window-body-width) 70)) ;; alternatively, use :subject
+		(:size . 7)))))
+
+;; if you use date instead of human-date in the above, use this setting
+;; give me ISO(ish) format date-time stamps in the header list
+;(setq mu4e-headers-date-format "%Y-%m-%d %H:%M")
+
+;; spell check
+(add-hook 'mu4e-compose-mode-hook
+    (defun my-do-compose-stuff ()
+       "My settings for message composition."
+       (visual-line-mode)
+       (org-mu4e-compose-org-mode)
+           (use-hard-newlines -1)
+       (flyspell-mode)))
+
+(use-package smtpmail
+ :ensure t)
+
+;;rename files when moving
+;;NEEDED FOR MBSYNC
+(setq mu4e-change-filenames-when-moving t)
+
+;;set up queue for offline email
+;;use mu mkdir  ~/Maildir/acc/queue to set up first
+(setq smtpmail-queue-mail nil)  ;; start in normal mode
+
+;;from the info manual
+(setq mu4e-attachment-dir  "~/Downloads")
+
+(setq message-kill-buffer-on-exit t)
+(setq mu4e-compose-dont-reply-to-self t)
+
+(require 'org-mu4e)
+
+;; convert org mode to HTML automatically
+(setq org-mu4e-convert-to-html t)
+(define-key mu4e-headers-mode-map (kbd "C-c c") 'org-mu4e-store-and-capture)
+(define-key mu4e-view-mode-map    (kbd "C-c c") 'org-mu4e-store-and-capture)
+
+;;from vxlabs config
+;; show full addresses in view message (instead of just names)
+;; toggle per name with M-RET
+(setq mu4e-view-show-addresses 't)
+
+;; don't ask when quitting
+(setq mu4e-confirm-quit nil)
+
+;; mu4e-context
+(setq mu4e-context-policy 'pick-first)
+(setq mu4e-compose-context-policy 'always-ask)
+(setq mu4e-contexts
+  (list
+   (make-mu4e-context
+    :name "work" ;;for palo-it-gmail
+    :enter-func (lambda () (mu4e-message "Entering context work"))
+    :leave-func (lambda () (mu4e-message "Leaving context work"))
+    :match-func (lambda (msg)
+		  (when msg
+        (mu4e-message-contact-field-matches
+         msg '(:from :to :cc :bcc) "abailly@palo-it.com")))
+    :vars '((user-mail-address . "abailly@palo-it.com")
+	    (user-full-name . "Arnaud Bailly")
+	    (mu4e-sent-folder . "/palo-it-gmail/[palo-it].Sent Mail")
+	    (mu4e-drafts-folder . "/palo-it-gmail/[palo-it].drafts")
+	    (mu4e-trash-folder . "/palo-it-gmail/[palo-it].Bin")
+	    (mu4e-compose-signature . (concat "Arnaud Bailly\n"
+                                        "Palo-IT Consultant Sénior\n"
+                                        "M +33 (0)6 17 12 19 78\n"
+                                        "1 rue Saint Julien, 44000 Nantes\n\n"
+                                        "[Emacs 25, org-mode 9, mu4e 1.0]\n"))
+	    (mu4e-compose-format-flowed . t)
+	    (smtpmail-queue-dir . "~/Maildir/palo-it-gmail/queue/cur")
+	    (message-send-mail-function . smtpmail-send-it)
+	    (smtpmail-smtp-user . "abailly@palo-it.com")
+	    (smtpmail-starttls-credentials . (("smtp.gmail.com" 587 nil nil)))
+	    (smtpmail-auth-credentials . (expand-file-name "~/.authinfo.gpg"))
+	    (smtpmail-default-smtp-server . "smtp.gmail.com")
+	    (smtpmail-smtp-server . "smtp.gmail.com")
+	    (smtpmail-smtp-service . 587)
+	    (smtpmail-debug-info . t)
+	    (smtpmail-debug-verbose . t)
+	    (mu4e-maildir-shortcuts . ( ("/palo-it-gmail/INBOX"            . ?i)
+					("/palo-it-gmail/[palo-it].Sent Mail" . ?s)
+					("/palo-it-gmail/[palo-it].Bin"       . ?t)
+					("/palo-it-gmail/[palo-it].All Mail"  . ?a)
+					("/palo-it-gmail/[palo-it].Starred"   . ?r)
+					("/palo-it-gmail/[palo-it].drafts"    . ?d)
+					))))
+   ;; (make-mu4e-context
+   ;;  :name "personal" ;;for acc2-gmail
+   ;;  :enter-func (lambda () (mu4e-message "Entering context personal"))
+   ;;  :leave-func (lambda () (mu4e-message "Leaving context personal"))
+   ;;  :match-func (lambda (msg)
+	 ;;    (when msg
+	 ;;  (mu4e-message-contact-field-matches
+	 ;;   msg '(:from :to :cc :bcc) "acc2@gmail.com")))
+   ;;  :vars '((user-mail-address . "acc2@gmail.com")
+	 ;;    (user-full-name . "User Account2")
+	 ;;    (mu4e-sent-folder . "/acc2-gmail/[acc2].Sent Mail")
+	 ;;    (mu4e-drafts-folder . "/acc2-gmail/[acc2].drafts")
+	 ;;    (mu4e-trash-folder . "/acc2-gmail/[acc2].Trash")
+	 ;;    (mu4e-compose-signature . (concat "Informal Signature\n" "Emacs is awesome!\n"))
+	 ;;    (mu4e-compose-format-flowed . t)
+	 ;;    (smtpmail-queue-dir . "~/Maildir/acc2-gmail/queue/cur")
+	 ;;    (message-send-mail-function . smtpmail-send-it)
+	 ;;    (smtpmail-smtp-user . "acc2")
+	 ;;    (smtpmail-starttls-credentials . (("smtp.gmail.com" 587 nil nil)))
+	 ;;    (smtpmail-auth-credentials . (expand-file-name "~/.authinfo.gpg"))
+	 ;;    (smtpmail-default-smtp-server . "smtp.gmail.com")
+	 ;;    (smtpmail-smtp-server . "smtp.gmail.com")
+	 ;;    (smtpmail-smtp-service . 587)
+	 ;;    (smtpmail-debug-info . t)
+	 ;;    (smtpmail-debug-verbose . t)
+	 ;;    (mu4e-maildir-shortcuts . ( ("/acc2-gmail/INBOX"            . ?i)
+	 ;;  			("/acc2-gmail/[acc2].Sent Mail" . ?s)
+	 ;;  			("/acc2-gmail/[acc2].Trash"     . ?t)
+	 ;;  			("/acc2-gmail/[acc2].All Mail"  . ?a)
+	 ;;  			("/acc2-gmail/[acc2].Starred"   . ?r)
+	 ;;  			("/acc2-gmail/[acc2].drafts"    . ?d)
+	 ;;  			)
+   ))
+
+;; gpg
+;; from https://github.com/kensanata/ggg#mac
+(defun gpg-restart-agent ()
+  "This kills and restarts the gpg-agent.
+
+To kill gpg-agent, we use killall. If you know that the agent is
+OK, you should just reload the environment file using
+`gpg-reload-agent-info'."
+  (interactive)
+  (shell-command "killall gpg-agent")
+  (shell-command "gpg-agent --daemon --enable-ssh-support --write-env-file")
+  ;; read the environment file instead of parsing the output
+  (gpg-reload-agent-info))
+
+(defun gpg-reload-agent-info ()
+  "Reload the ~/.gpg-agent-info file."
+  (interactive)
+  (let ((file (expand-file-name "~/.gpg-agent-info")))
+    (when (file-readable-p file)
+      (with-temp-buffer
+	(insert-file-contents file)
+	(goto-char (point-min))
+	(while (re-search-forward "\\([A-Z_]+\\)=\\(.*\\)" nil t)
+	  (setenv (match-string 1) (match-string 2)))))))
+
+(defun gpg-agent-startup ()
+  "Initialize the gpg-agent if necessary.
+
+Note that sometimes the gpg-agent can be up and running and still
+be useless, in which case you should restart it using
+`gpg-restart-agent'."
+  (gpg-reload-agent-info)
+  (let ((pid (getenv "SSH_AGENT_PID")))
+    (when (and (fboundp 'list-system-processes)
+	       (or (not pid)
+		   (not (member (string-to-number pid)
+				(list-system-processes)))))
+      (gpg-restart-agent))))
+
+(gpg-agent-startup)
