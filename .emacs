@@ -99,10 +99,14 @@
          "*** TODO %?\n  %i\n  %a")
         ("j" "Journal" entry (file+datetree "~/log/journal.org")
          "* %?\nEntered on %U\n  %i\n  %a")
-        ("s" "Symbiont" entry (file+datetree "~/log/symbiont.org")
+        ("p" "Palo-IT" entry (file+datetree "~/log/palo-it.org")
          "* %?\nEntered on %U\n  %i\n  %a")
-        ("p" "Capture" entry (file+datetree "~/log/journal.org")
+        ("P" "Capture" entry (file+datetree "~/log/journal.org")
          "* %c\n%i" :immediate-finish t)
+        ("w" "Handle email@work" entry (file+datetree "~/log/palo-it.org")
+         "**** TODO %a %?\nDEADLINE: %(org-insert-time-stamp (org-read-date nil t \"+2d\"))")
+;;        ("w" "Handle email@home" entry (file+datetree "~/log/journal.org")
+;;         "**** TODO %a %?\nDEADLINE: %(org-insert-time-stamp (org-read-date nil t \"+2d\"))")
         ("L" "Capture link" entry (file+datetree "~/log/journal.org")
          "* %? [[%:link][%:description]] \nCaptured On: %U" :immediate-finish t)))
 
@@ -110,10 +114,12 @@
 
 (setq org-todo-keywords
            '((sequence "TODO(t)" "DOING(i)" "|" "DONE(d)")
+             (sequence "FOLLOWUP(f)" "|" "DONE(d)")
              (sequence "WAITING(w)" "|" "CANCELLED(c)")))
 
 (setq org-todo-keyword-faces
       (quote (("TODO" :foreground "red" :weight bold)
+              ("FOLLOWUP" :foreground "red" :weight bold)
               ("NEXT" :foreground "blue" :weight bold)
               ("DONE" :foreground "forest green" :weight bold)
               ("DOING" :foreground "orange" :weight bold)
