@@ -28,6 +28,14 @@
 (global-set-key (kbd "C-x M-b") "β")
 (global-set-key (kbd "C-x M-d") "δ")
 (global-set-key (kbd "C-x M-l") "λ")
+(global-set-key (kbd "C-x M-p") "π")
+(global-set-key (kbd "C-x M-r") "ρ")
+(global-set-key (kbd "C-x C-g") "γ")
+(global-set-key (kbd "C-x M-P") "Π")
+(global-set-key (kbd "C-x M-S") "Σ")
+(global-set-key (kbd "C-x M-i") (lambda ()
+                                  (interactive)
+                                  (insert "·")))
 
 (setq fill-column 132)
 (global-set-key "\C-cg" 'goto-line)
@@ -35,6 +43,8 @@
 (setq require-final-newline t)
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
 (global-hl-line-mode 1)
+
+(global-set-key "\C-c\C-o" 'browse-url-at-point)
 
 ;; https://github.com/emacsmirror/expand-region
 (require 'expand-region)
@@ -89,10 +99,11 @@
 (setq org-directory "~/log")
 (setq org-agenda-files '("~/log/"))
 
+(add-hook 'auto-save-hook 'org-save-all-org-buffers)
+
 (global-set-key "\C-cl" 'org-store-link)
 (global-set-key "\C-cr" 'org-capture)
 (global-set-key "\C-ca" 'org-agenda)
-(global-set-key "\C-cb" 'org-iswitchb)
 
 (setq org-capture-templates
       '(("t" "Todo" entry (file+headline "~/log/todo.org" "Tasks")
@@ -113,9 +124,8 @@
 (add-hook 'org-mode-hook 'auto-fill-mode)
 
 (setq org-todo-keywords
-           '((sequence "TODO(t)" "DOING(i)" "|" "DONE(d)")
-             (sequence "FOLLOWUP(f)" "|" "DONE(d)")
-             (sequence "WAITING(w)" "|" "CANCELLED(c)")))
+      '((sequence "TODO(t)" "DOING(i)" "FOLLOWUP(f)" "|" "DONE(d)")
+        (sequence "WAITING(w)" "|" "CANCELLED(c)")))
 
 (setq org-todo-keyword-faces
       (quote (("TODO" :foreground "red" :weight bold)
@@ -187,16 +197,71 @@
         (reverse exec-path)
         (list (concat (getenv "HOME") "/.local/bin")  "/usr/local/bin" ))))
 
-(require 'intero)
-(require 'flycheck)
-(flycheck-add-next-checker 'intero '(warning . haskell-hlint))
+;; LSP Haskell
+;; (use-package flycheck
+;;   :ensure t
+;;   :init
+;;   (global-flycheck-mode t))
+;; (use-package yasnippet
+;;   :ensure t)
+;; (use-package lsp-mode
+;;   :ensure t
+;;   :hook (haskell-mode . lsp)
+;;   :commands lsp)
+;; (use-package lsp-ui
+;;   :ensure t
+;;   :commands lsp-ui-mode)
+;; (use-package lsp-haskell
+;;  :ensure t
+;;  :config
+;;  (setq lsp-haskell-process-path-hie "ghcide")
+;;  (setq lsp-haskell-process-args-hie '())
+;;  ;; Comment/uncomment this line to see interactions between lsp client/server.
+;;  ;;(setq lsp-log-io t)
+;;  )
 
-(add-hook 'haskell-mode-hook 'intero-mode)
-(add-hook 'haskell-mode-hook 'linum-mode)
+;; optionally
+;; (use-package lsp-ui :commands lsp-ui-mode)
 
-;; stylish haskell formatting
-(setq haskell-stylish-on-save t)
-(setq haskell-tags-on-save t)
+;; seems like for some reason the function cannot be foudn at startup
+(defun string-join (sl delim)
+  (mapconcat 'identity sl delim))
+
+(use-package haskell-mode
+  :ensure t
+  :init (progn
+          (add-hook 'haskell-mode-hook 'interactive-haskell-mode)
+          (add-hook 'haskell-mode-hook 'haskell-decl-scan-mode)
+          (add-hook 'haskell-mode-hook 'linum-mode))
+  :config (progn
+            (setq haskell-font-lock-symbols t)
+            (setq haskell-process-use-presentation-mode t)
+            (setq haskell-ghci-options
+                  '("-ferror-spans"
+                    "-fdefer-typed-holes"
+                    "-fmax-relevant-binds=0"
+                    "-fno-diagnostics-show-caret"
+                    ))
+            (setq haskell-process-args-stack-ghci
+                  (list (concat "--ghci-options=" (string-join haskell-ghci-options " "))
+                        "--no-build"
+                        "--no-load"))
+            (setq haskell-font-lock-symbols-alist
+                  '(("\\" . "λ")
+                    ("." "∘" haskell-font-lock-dot-is-not-composition)
+                    ("forall" . "∀")))
+            (setq haskell-interactive-popup-errors nil)
+            (setq haskell-indentation-left-offset 2)
+            (setq haskell-indentation-layout-offset 2)
+            (setq haskell-tags-on-save t)))
+
+;; ormolu formatting
+;; https://github.com/vyorkin/ormolu.el
+(use-package ormolu
+  :init (add-hook 'haskell-mode-hook 'interactive-haskell-mode)
+  :bind (:map haskell-mode-map
+              ("C-c r" . ormolu-format-buffer)))
+
 
 (put 'downcase-region 'disabled nil)
 
@@ -223,13 +288,26 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(coq-compile-before-require t)
+ '(haskell-stylish-on-save nil)
+ '(idris-interpreter-flags (quote ("-p" "contrib")))
+ '(idris-interpreter-path "idris")
  '(idris-log-events t)
  '(package-selected-packages
    (quote
-    (ess dockerfile-mode org-mu4e mu4e org-mime ag magit expand-region company-go go-autocomplete go-complete go-mode go company-coq helm-core helm helm-ag-r helm-company helm-git helm-google helm-hoogle helm-idris helm-ls-git markdown-mode multiple-cursors magit-gh-pulls intero flx-isearch flx-ido)))
+    (plantuml-mode ormolu proof-general gnuplot-mode graphviz-dot-mode powershell rainbow-delimiters lsp-haskell lsp-ui lsp-mode typo typopunct ess dockerfile-mode org-mu4e mu4e org-mime ag magit expand-region company-go go-autocomplete go-complete go-mode go company-coq helm-core helm helm-ag-r helm-company helm-git helm-google helm-hoogle helm-idris helm-ls-git markdown-mode multiple-cursors magit-gh-pulls intero flx-isearch flx-ido)))
  '(safe-local-variable-values
    (quote
-    ((intero-targets "circuit-breaker:lib" "circuit-breaker:exe:circuit-breaker" "circuit-breaker:test:circuit-breaker-test" "log-controller:lib" "log-controller:exe:control" "log-controller:test:log-controller-test" "one-log:lib" "one-log:exe:one-log-exe" "one-log:test:one-log-test" "pet-store:lib" "pet-store:exe:driver-petstore" "pet-store:exe:mock-petstore" "pet-store:test:tests" "pet-store-backend:lib" "pet-store-backend:exe:pet-store-server")
+    ((intero-targets "sensei:lib" "sensei:exe:sensei-exe" "sensei:test:sensei-test")
+     (intero-targets "minilang:lib" "minilang:exe:mli" "minilang:test:minilang-test")
+     (intero-targets "rex-api:lib" "rex-api:exe:rex-server" "rex-api:test:rex-tests")
+     (intero-targets "pet-store:lib" "pet-store:exe:driver-petstore" "pet-store:exe:mock-petstore" "pet-store:test:tests" "pet-store-backend:lib" "pet-store-backend:exe:pet-store-server")
+     (intero-targets "pet-store-backend:lib" "pet-store-backend:exe:pet-store-server" "pet-store-backend:test:runner")
+     (intero-targets "rex-cli:lib" "rex-cli:exe:rex-cli" "rex-cli:test:rex-tests" "rex-contracts:lib" "rex-depgraph:lib" "rex-depgraph:test:rex-depgraph-tests" "rex-feeder:lib" "rex-feeder:test:rex-feeder-tests" "rex-tester:lib" "rex-tester:test:rex-tester-tests")
+     (intero-targets "rex-depgraph:lib" "rex-depgraph:exe:rex-callgraph" "rex-depgraph:exe:rex-generator" "rex-depgraph:test:rex-depgraph-tests")
+     (intero-targets "tents-and-trees:lib" "tents-and-trees:exe:tents-and-trees-exe" "tents-and-trees:test:tents-and-trees-test")
+     (intero-targets "hpaie:lib" "hpaie:exe:assign-keys" "hpaie:exe:gen-ledger" "hpaie:test:hpaie-test")
+     (intero-targets "circuit-breaker:lib" "circuit-breaker:exe:circuit-breaker" "circuit-breaker:test:circuit-breaker-test" "log-controller:lib" "log-controller:exe:control" "log-controller:test:log-controller-test" "one-log:lib" "one-log:exe:one-log-exe" "one-log:test:one-log-test" "pet-store:lib" "pet-store:exe:driver-petstore" "pet-store:exe:mock-petstore" "pet-store:test:tests" "pet-store-backend:lib" "pet-store-backend:exe:pet-store-server")
      (time-stamp-active . t)
      (intero-targets "day7:exe:day7" "intcode:lib")
      (intero-targets "day7:exe:day7")
@@ -325,6 +403,7 @@
   :ensure t)
 
 ;; javascript
+(require 'flycheck)
 (use-package js2-mode
   :ensure t)
 (use-package js2-refactor
@@ -429,13 +508,13 @@
 ;; from https://www.reddit.com/r/emacs/comments/bfsck6/mu4e_for_dummies/elgoumx
 (add-hook 'mu4e-headers-mode-hook
       (defun my/mu4e-change-headers ()
-	(interactive)
-	(setq mu4e-headers-fields
-	      `((:human-date . 25) ;; alternatively, use :date
-		(:flags . 6)
-		(:from . 22)
-		(:thread-subject . ,(- (window-body-width) 70)) ;; alternatively, use :subject
-		(:size . 7)))))
+        (interactive)
+        (setq mu4e-headers-fields
+              `((:human-date . 25) ;; alternatively, use :date
+                (:flags . 6)
+                (:from . 22)
+                (:thread-subject . ,(- (window-body-width) 70)) ;; alternatively, use :subject
+                (:size . 7)))))
 
 ;; if you use date instead of human-date in the above, use this setting
 ;; give me ISO(ish) format date-time stamps in the header list
@@ -485,77 +564,120 @@
 ;; mu4e-context
 (setq mu4e-context-policy 'pick-first)
 (setq mu4e-compose-context-policy 'always-ask)
+(setq mu4e-sent-messages-behavior 'sent)
 (setq mu4e-contexts
-  (list
-   (make-mu4e-context
-    :name "work" ;;for palo-it-gmail
-    :enter-func (lambda () (mu4e-message "Entering context work"))
-    :leave-func (lambda () (mu4e-message "Leaving context work"))
-    :match-func (lambda (msg)
-		  (when msg
-        (mu4e-message-contact-field-matches
-         msg '(:from :to :cc :bcc) "abailly@palo-it.com")))
-    :vars '((user-mail-address . "abailly@palo-it.com")
-	    (user-full-name . "Arnaud Bailly")
-	    (mu4e-sent-folder . "/palo-it-gmail/[palo-it].Sent Mail")
-	    (mu4e-drafts-folder . "/palo-it-gmail/[palo-it].drafts")
-	    (mu4e-trash-folder . "/palo-it-gmail/[palo-it].Bin")
-	    (mu4e-compose-signature . (concat "Arnaud Bailly\n"
-                                        "Palo-IT Consultant Sénior\n"
-                                        "M +33 (0)6 17 12 19 78\n"
-                                        "1 rue Saint Julien, 44000 Nantes\n\n"
-                                        "[Emacs 25, org-mode 9, mu4e 1.0]\n"))
-	    (mu4e-compose-format-flowed . t)
-	    (smtpmail-queue-dir . "~/Maildir/palo-it-gmail/queue/cur")
-	    (message-send-mail-function . smtpmail-send-it)
-	    (smtpmail-smtp-user . "abailly@palo-it.com")
-	    (smtpmail-starttls-credentials . (("smtp.gmail.com" 587 nil nil)))
-	    (smtpmail-auth-credentials . (expand-file-name "~/.authinfo.gpg"))
-	    (smtpmail-default-smtp-server . "smtp.gmail.com")
-	    (smtpmail-smtp-server . "smtp.gmail.com")
-	    (smtpmail-smtp-service . 587)
-	    (smtpmail-debug-info . t)
-	    (smtpmail-debug-verbose . t)
-	    (mu4e-maildir-shortcuts . ( ("/palo-it-gmail/INBOX"            . ?i)
-					("/palo-it-gmail/[palo-it].Sent Mail" . ?s)
-					("/palo-it-gmail/[palo-it].Bin"       . ?t)
-					("/palo-it-gmail/[palo-it].All Mail"  . ?a)
-					("/palo-it-gmail/[palo-it].Starred"   . ?r)
-					("/palo-it-gmail/[palo-it].drafts"    . ?d)
-					))))
-   ;; (make-mu4e-context
-   ;;  :name "personal" ;;for acc2-gmail
-   ;;  :enter-func (lambda () (mu4e-message "Entering context personal"))
-   ;;  :leave-func (lambda () (mu4e-message "Leaving context personal"))
-   ;;  :match-func (lambda (msg)
-	 ;;    (when msg
-	 ;;  (mu4e-message-contact-field-matches
-	 ;;   msg '(:from :to :cc :bcc) "acc2@gmail.com")))
-   ;;  :vars '((user-mail-address . "acc2@gmail.com")
-	 ;;    (user-full-name . "User Account2")
-	 ;;    (mu4e-sent-folder . "/acc2-gmail/[acc2].Sent Mail")
-	 ;;    (mu4e-drafts-folder . "/acc2-gmail/[acc2].drafts")
-	 ;;    (mu4e-trash-folder . "/acc2-gmail/[acc2].Trash")
-	 ;;    (mu4e-compose-signature . (concat "Informal Signature\n" "Emacs is awesome!\n"))
-	 ;;    (mu4e-compose-format-flowed . t)
-	 ;;    (smtpmail-queue-dir . "~/Maildir/acc2-gmail/queue/cur")
-	 ;;    (message-send-mail-function . smtpmail-send-it)
-	 ;;    (smtpmail-smtp-user . "acc2")
-	 ;;    (smtpmail-starttls-credentials . (("smtp.gmail.com" 587 nil nil)))
-	 ;;    (smtpmail-auth-credentials . (expand-file-name "~/.authinfo.gpg"))
-	 ;;    (smtpmail-default-smtp-server . "smtp.gmail.com")
-	 ;;    (smtpmail-smtp-server . "smtp.gmail.com")
-	 ;;    (smtpmail-smtp-service . 587)
-	 ;;    (smtpmail-debug-info . t)
-	 ;;    (smtpmail-debug-verbose . t)
-	 ;;    (mu4e-maildir-shortcuts . ( ("/acc2-gmail/INBOX"            . ?i)
-	 ;;  			("/acc2-gmail/[acc2].Sent Mail" . ?s)
-	 ;;  			("/acc2-gmail/[acc2].Trash"     . ?t)
-	 ;;  			("/acc2-gmail/[acc2].All Mail"  . ?a)
-	 ;;  			("/acc2-gmail/[acc2].Starred"   . ?r)
-	 ;;  			("/acc2-gmail/[acc2].drafts"    . ?d)
-	 ;;  			)
-   ))
+      (list
+       (make-mu4e-context
+        :name "work" ;;for palo-it-gmail
+        :enter-func (lambda () (mu4e-message "Entering context work"))
+        :leave-func (lambda () (mu4e-message "Leaving context work"))
+        :match-func (lambda (msg)
+                      (when msg
+                        (mu4e-message-contact-field-matches
+                         msg '(:from :to :cc :bcc) "abailly@palo-it.com")))
+        :vars '((user-mail-address . "abailly@palo-it.com")
+                (user-full-name . "Arnaud Bailly")
+                (mu4e-sent-folder . "/palo-it-gmail/[palo-it].Sent Mail")
+                (mu4e-drafts-folder . "/palo-it-gmail/[palo-it].drafts")
+                (mu4e-trash-folder . "/palo-it-gmail/[palo-it].Bin")
+                (mu4e-compose-signature . (concat "Arnaud Bailly\n"
+                                                  "Palo-IT Consultant Sénior\n"
+                                                  "M +33 (0)6 17 12 19 78\n"
+                                                  "1 rue Saint Julien, 44000 Nantes\n\n"
+                                                  "[Emacs 25, org-mode 9, mu4e 1.0]\n"))
+                (mu4e-compose-format-flowed . t)
+                (smtpmail-queue-dir . "~/Maildir/palo-it-gmail/queue/cur")
+                (message-send-mail-function . smtpmail-send-it)
+                (smtpmail-smtp-user . "abailly@palo-it.com")
+                (smtpmail-starttls-credentials . (("smtp.gmail.com" 587 nil nil)))
+                (smtpmail-auth-credentials . (expand-file-name "~/.authinfo.gpg"))
+                (smtpmail-default-smtp-server . "smtp.gmail.com")
+                (smtpmail-smtp-server . "smtp.gmail.com")
+                (smtpmail-smtp-service . 587)
+                (smtpmail-debug-info . t)
+                (smtpmail-debug-verbose . t)
+                (mu4e-maildir-shortcuts . ( ("/palo-it-gmail/INBOX"            . ?i)
+                                            ("/palo-it-gmail/[palo-it].Sent Mail" . ?s)
+                                            ("/palo-it-gmail/[palo-it].Bin"       . ?t)
+                                            ("/palo-it-gmail/[palo-it].All Mail"  . ?a)
+                                            ("/palo-it-gmail/[palo-it].Starred"   . ?r)
+                                            ("/palo-it-gmail/[palo-it].drafts"    . ?d)
+                                            ))))
+       (make-mu4e-context
+        :name "solina"
+        :enter-func (lambda () (mu4e-message "Entering context solina"))
+        :leave-func (lambda () (mu4e-message "Leaving context solina"))
+        :match-func (lambda (msg)
+                      (when msg
+                        (or
+                         (mu4e-message-contact-field-matches
+                          msg '(:from :to :cc :bcc) "Arnaud.Bailly@solina-group.fr")
+                         (mu4e-message-contact-field-matches
+                          msg '(:from :to :cc :bcc) "Arnaud.BAILLY@solina-group.fr")
+                         (mu4e-message-contact-field-matches
+                          msg '(:from :to :cc :bcc) "arnaudb@solina-group.fr")
+                        )))
+        :vars '((user-mail-address . "Arnaud.Bailly@solina-group.fr")
+                (user-full-name . "Arnaud Bailly")
+                (mu4e-sent-folder . "/solina-gmail/[solina].Sent Mail")
+                (mu4e-drafts-folder . "/solina-gmail/[solina].drafts")
+                (mu4e-trash-folder . "/solina-gmail/[solina].Bin")
+                (mu4e-compose-signature . (concat "Arnaud Bailly\n"
+                                                  "Architect @ Project SWAP\n"
+                                                  "M +33 (0)6 17 12 19 78\n"
+                                                  "[Emacs 25, org-mode 9, mu4e 1.0]\n"))
+                (mu4e-compose-format-flowed . t)
+                (smtpmail-queue-dir . "~/Maildir/solina-gmail/queue/cur")
+                (message-send-mail-function . smtpmail-send-it)
+                (smtpmail-smtp-user . "arnaudb@solina-group.fr")
+                (smtpmail-stream-type . starttls)
+                (smtpmail-starttls-credentials . (("smtp.office365.com" 587 nil nil)))
+                (smtpmail-auth-credentials . (expand-file-name "~/.authinfo.gpg"))
+                (smtpmail-default-smtp-server . "smtp.office365.com")
+                (smtpmail-smtp-server . "smtp.office365.com")
+                (smtpmail-smtp-service . 587)
+                (smtpmail-debug-info . t)
+                (smtpmail-debug-verbose . t)
+                (mu4e-maildir-shortcuts . ( ("/solina-gmail/INBOX"            . ?i)
+                                            ("/solina-gmail/[solina].Sent Mail" . ?s)
+                                            ("/solina-gmail/[solina].Bin"       . ?t)
+                                            ("/solina-gmail/[solina].All Mail"  . ?a)
+                                            ("/solina-gmail/[solina].Starred"   . ?r)
+                                            ("/solina-gmail/[solina].drafts"    . ?d)
+                                            ))))
+       ;; (make-mu4e-context
+       ;;  :name "personal" ;;for acc2-gmail
+       ;;  :enter-func (lambda () (mu4e-message "Entering context personal"))
+       ;;  :leave-func (lambda () (mu4e-message "Leaving context personal"))
+       ;;  :match-func (lambda (msg)
+       ;;    (when msg
+       ;;  (mu4e-message-contact-field-matches
+       ;;   msg '(:from :to :cc :bcc) "acc2@gmail.com")))
+       ;;  :vars '((user-mail-address . "acc2@gmail.com")
+       ;;    (user-full-name . "User Account2")
+       ;;    (mu4e-sent-folder . "/acc2-gmail/[acc2].Sent Mail")
+       ;;    (mu4e-drafts-folder . "/acc2-gmail/[acc2].drafts")
+       ;;    (mu4e-trash-folder . "/acc2-gmail/[acc2].Trash")
+       ;;    (mu4e-compose-signature . (concat "Informal Signature\n" "Emacs is awesome!\n"))
+       ;;    (mu4e-compose-format-flowed . t)
+       ;;    (smtpmail-queue-dir . "~/Maildir/acc2-gmail/queue/cur")
+       ;;    (message-send-mail-function . smtpmail-send-it)
+       ;;    (smtpmail-smtp-user . "acc2")
+       ;;    (smtpmail-starttls-credentials . (("smtp.gmail.com" 587 nil nil)))
+       ;;    (smtpmail-auth-credentials . (expand-file-name "~/.authinfo.gpg"))
+       ;;    (smtpmail-default-smtp-server . "smtp.gmail.com")
+       ;;    (smtpmail-smtp-server . "smtp.gmail.com")
+       ;;    (smtpmail-smtp-service . 587)
+       ;;    (smtpmail-debug-info . t)
+       ;;    (smtpmail-debug-verbose . t)
+       ;;    (mu4e-maildir-shortcuts . ( ("/acc2-gmail/INBOX"            . ?i)
+       ;;  			("/acc2-gmail/[acc2].Sent Mail" . ?s)
+       ;;  			("/acc2-gmail/[acc2].Trash"     . ?t)
+       ;;  			("/acc2-gmail/[acc2].All Mail"  . ?a)
+       ;;  			("/acc2-gmail/[acc2].Starred"   . ?r)
+       ;;  			("/acc2-gmail/[acc2].drafts"    . ?d)
+       ;;  			)
+       ))
 
 ;; gpg
 ;; from https://github.com/kensanata/ggg#mac
@@ -577,10 +699,10 @@ OK, you should just reload the environment file using
   (let ((file (expand-file-name "~/.gpg-agent-info")))
     (when (file-readable-p file)
       (with-temp-buffer
-	(insert-file-contents file)
-	(goto-char (point-min))
-	(while (re-search-forward "\\([A-Z_]+\\)=\\(.*\\)" nil t)
-	  (setenv (match-string 1) (match-string 2)))))))
+        (insert-file-contents file)
+        (goto-char (point-min))
+        (while (re-search-forward "\\([A-Z_]+\\)=\\(.*\\)" nil t)
+          (setenv (match-string 1) (match-string 2)))))))
 
 (defun gpg-agent-startup ()
   "Initialize the gpg-agent if necessary.
@@ -591,9 +713,30 @@ be useless, in which case you should restart it using
   (gpg-reload-agent-info)
   (let ((pid (getenv "SSH_AGENT_PID")))
     (when (and (fboundp 'list-system-processes)
-	       (or (not pid)
-		   (not (member (string-to-number pid)
-				(list-system-processes)))))
+               (or (not pid)
+                   (not (member (string-to-number pid)
+                                (list-system-processes)))))
       (gpg-restart-agent))))
 
 (gpg-agent-startup)
+
+(require 'go-mode)
+
+;; plantuml
+(setq plantuml-jar-path "/Users/arnaud/plantuml.jar")
+(setq plantuml-default-exec-mode 'jar)
+(add-to-list 'auto-mode-alist '("\\.plantuml\\'" . plantuml-mode))
+
+
+;; powerbuilder
+(load-file "/Users/arnaud/.emacs.d/powerbuilder-mode.el")
+(require 'powerbuilder-mode)
+(add-to-list 'auto-mode-alist '("\\.sr.*\\'" . powerbuilder-mode))
+
+;; kill all cal-* buffers
+(defun kill-dired-buffers ()
+  (interactive)
+  (mapc (lambda (buffer)
+          (when (string-match "cal-.*" (buffer-name buffer))
+            (kill-buffer buffer)))
+        (buffer-list)))
