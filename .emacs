@@ -734,9 +734,13 @@ be useless, in which case you should restart it using
 (add-to-list 'auto-mode-alist '("\\.sr.*\\'" . powerbuilder-mode))
 
 ;; kill all cal-* buffers
-(defun kill-dired-buffers ()
+(defun kill-cal-buffers ()
   (interactive)
   (mapc (lambda (buffer)
-          (when (string-match "cal-.*" (buffer-name buffer))
-            (kill-buffer buffer)))
+          (let ((buf (buffer-name buffer)))
+            (when (string-match "cal-.*" buf)
+              (kill-buffer buffer)
+              (message "Killed buffer %s" buf))))
         (buffer-list)))
+
+(global-set-key (kbd "C-x C-C") 'kill-cal-buffers)
