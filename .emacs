@@ -3,7 +3,7 @@
 ;; package installation
 (require 'package)
 (add-to-list 'package-archives
-             '("melpa" . "http://melpa.org/packages/"))
+             '("melpa" . "https://melpa.org/packages/"))
 
 (package-initialize)
 
@@ -14,15 +14,31 @@
 (add-hook 'window-setup-hook
          (lambda nil
             ;; font setting
-           (set-frame-parameter (selected-frame) 'alpha '(80 80))
-           (set-face-background 'hl-line "#ff0")
+           (set-frame-parameter (selected-frame) 'alpha '(100 100))
            (set-face-attribute 'default nil
                                :background "white"
                                :foreground "black"
-                               :family "Source Code Pro"
+                               :family "Hack"
                                :height 140)
 
            ))
+
+;; from https://www.emacswiki.org/emacs/iTerm2
+(unless window-system
+  (require 'mouse)
+  (xterm-mouse-mode t)
+  (defun track-mouse (e))
+  (setq mouse-sel-mode t)
+  )
+
+(require 'cl-lib)
+(cl-loop for char from ?a to ?z
+         do (define-key input-decode-map (format "\e[1;P%c" char) (kbd (format "s-%c" char))))
+
+(menu-bar-mode 0)
+(tool-bar-mode 0)
+
+(set-fill-column 132)
 
 (global-set-key (kbd "C-x M-a") "α")
 (global-set-key (kbd "C-x M-b") "β")
@@ -37,14 +53,31 @@
                                   (interactive)
                                   (insert "·")))
 
+(global-set-key (kbd "C-c C-/") 'comment-or-uncomment-region)
+
 (setq fill-column 132)
 (global-set-key "\C-cg" 'goto-line)
 (global-set-key "\C-c\C-g" 'rgrep)
 (setq require-final-newline t)
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
 (global-hl-line-mode 1)
-
 (global-set-key "\C-c\C-o" 'browse-url-at-point)
+
+;; https://blog.sumtypeofway.com/posts/emacs-config.html
+(use-package doom-themes
+  :config
+  (let ((chosen-theme 'doom-one-light))
+    (doom-themes-visual-bell-config)
+    (doom-themes-org-config)
+    (setq doom-challenger-deep-brighter-comments t
+          doom-challenger-deep-brighter-modeline t)
+    (load-theme chosen-theme)))
+
+(show-paren-mode)
+
+(use-package rainbow-delimiters
+  :ensure t
+  :hook ((prog-mode . rainbow-delimiters-mode)))
 
 ;; https://github.com/emacsmirror/expand-region
 (require 'expand-region)
@@ -87,6 +120,7 @@
 
 ;; to input pinyin accented chars using right option/alt key
 (setq mac-right-option-modifier 'none)
+(setq mac-command-modifier 'super)
 
 ;; form http://stackoverflow.com/questions/2903426/display-path-of-file-in-status-bar
 (require 'uniquify)
@@ -95,6 +129,9 @@
 ;; Org stuff
 (require 'org)
 (require 'org-protocol)
+;; to get shortcuts for inserting code blocsk
+(require 'org-tempo)
+
 
 (setq org-directory "~/log")
 (setq org-agenda-files '("~/log/"))
@@ -152,14 +189,56 @@
 (setq org-time-clocksum-format
       '(:hours "%d" :require-hours t :minutes ":%02d" :require-minutes t))
 
-(menu-bar-mode 0)
-(tool-bar-mode 0)
+(setq org-roam-capture-templates
+        '(("d" "default" plain (function org-roam--capture-get-point)
+           "%?"
+           :file-name "${slug}"
+           :head "#+TITLE: ${title}\n"
+           :unnarrowed t)
+          ("p" "private" plain (function org-roam--capture-get-point)
+           "%?"
+           :file-name "private-${slug}"
+           :head "#+TITLE: ${title}\n"
+           :unnarrowed t)))
 
-(global-set-key (kbd "C-c C-/") 'comment-or-uncomment-region)
+(setq org-roam-graph-viewer "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome") ;; will use view-file by default.
+
+(use-package org-roam
+  :hook
+  (after-init . org-roam-mode)
+  :custom
+  (org-roam-directory "~/log/roam")
+  :bind (:map org-roam-mode-map
+              (("C-c n l" . org-roam)
+               ("C-c n f" . org-roam-find-file)
+               ("C-c n g" . org-roam-show-graph)
+               ("C-c n d" . org-roam-dailies-today))
+              :map org-mode-map
+              (("C-c n i" . org-roam-insert))))
+
+(use-package org-roam-server
+  :after org-roam
+  :load-path "~/org-roam-server/"
+  :ensure nil
+  :config
+  (setq org-roam-server-host "127.0.0.1"
+        org-roam-server-port 8080
+        org-roam-server-authenticate nil
+        org-roam-server-export-inline-images t
+        org-roam-server-serve-files nil
+        org-roam-server-served-file-extensions '("pdf" "mp4" "ogv")
+        org-roam-server-network-poll t
+        org-roam-server-network-arrows nil
+        org-roam-server-network-label-truncate t
+        org-roam-server-network-label-truncate-length 60
+        org-roam-server-network-label-wrap-length 20))
+
+(require 'org-roam-protocol)
 
 ;; multiple-cursors
 ;; https://github.com/magnars/multiple-cursors.el
-(require 'multiple-cursors)
+(use-package multiple-cursors
+  :ensure t)
 
 (global-set-key (kbd "C->") 'mc/mark-next-like-this)
 (global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
@@ -178,6 +257,9 @@
 ;; use space for indentation, 2 spaces wide
 (setq-default indent-tabs-mode nil)
 (setq-default tab-width 2)
+;; ensure javascript indentation is 2 spaces
+(setq js-indent-level 2)
+(setq-default js2-basic-offset 2)
 
 ;; activate smerge when opening conflict files
 (defun sm-try-smerge ()
@@ -197,28 +279,32 @@
         (reverse exec-path)
         (list (concat (getenv "HOME") "/.local/bin")  "/usr/local/bin" ))))
 
-;; LSP Haskell
-;; (use-package flycheck
-;;   :ensure t
-;;   :init
-;;   (global-flycheck-mode t))
-;; (use-package yasnippet
-;;   :ensure t)
-;; (use-package lsp-mode
-;;   :ensure t
-;;   :hook (haskell-mode . lsp)
-;;   :commands lsp)
-;; (use-package lsp-ui
-;;   :ensure t
-;;   :commands lsp-ui-mode)
-;; (use-package lsp-haskell
-;;  :ensure t
-;;  :config
-;;  (setq lsp-haskell-process-path-hie "ghcide")
-;;  (setq lsp-haskell-process-args-hie '())
-;;  ;; Comment/uncomment this line to see interactions between lsp client/server.
-;;  ;;(setq lsp-log-io t)
-;;  )
+;;LSP Haskell
+(use-package flycheck
+  :ensure t
+  :init
+  (global-flycheck-mode t))
+(use-package yasnippet
+  :ensure t)
+(use-package lsp-mode
+  :ensure t
+  :config
+  (setq lsp-auto-guess-root nil)
+  :hook (haskell-mode . lsp)
+  :commands lsp)
+
+(use-package lsp-ui
+  :ensure t
+  :commands lsp-ui-mode)
+(use-package lsp-haskell
+  :ensure t
+  :config
+ (setq lsp-haskell-server-path "haskell-language-server-wrapper")
+ (setq lsp-haskell-server-args ())
+  ;; (setq lsp-haskell-server-path "~/.local/bin/haskell-language-server")
+  ;; Comment/uncomment this line to see interactions between lsp client/server.
+  (setq lsp-log-io t)
+  )
 
 ;; optionally
 ;; (use-package lsp-ui :commands lsp-ui-mode)
@@ -227,33 +313,33 @@
 (defun string-join (sl delim)
   (mapconcat 'identity sl delim))
 
-(use-package haskell-mode
-  :ensure t
-  :init (progn
-          (add-hook 'haskell-mode-hook 'interactive-haskell-mode)
-          (add-hook 'haskell-mode-hook 'haskell-decl-scan-mode)
-          (add-hook 'haskell-mode-hook 'linum-mode))
-  :config (progn
-            (setq haskell-font-lock-symbols t)
-            (setq haskell-process-use-presentation-mode t)
-            (setq haskell-ghci-options
-                  '("-ferror-spans"
-                    "-fdefer-typed-holes"
-                    "-fmax-relevant-binds=0"
-                    "-fno-diagnostics-show-caret"
-                    ))
-            (setq haskell-process-args-stack-ghci
-                  (list (concat "--ghci-options=" (string-join haskell-ghci-options " "))
-                        "--no-build"
-                        "--no-load"))
-            (setq haskell-font-lock-symbols-alist
-                  '(("\\" . "λ")
-                    ("." "∘" haskell-font-lock-dot-is-not-composition)
-                    ("forall" . "∀")))
-            (setq haskell-interactive-popup-errors nil)
-            (setq haskell-indentation-left-offset 2)
-            (setq haskell-indentation-layout-offset 2)
-            (setq haskell-tags-on-save t)))
+;; (use-package haskell-mode
+;;   :ensure t
+;;   :init (progn
+;;           (add-hook 'haskell-mode-hook 'interactive-haskell-mode)
+;;           (add-hook 'haskell-mode-hook 'haskell-decl-scan-mode)
+;;           (add-hook 'haskell-mode-hook 'linum-mode))
+;;   :config (progn
+;;             (setq haskell-font-lock-symbols t)
+;;             (setq haskell-process-use-presentation-mode t)
+;;             (setq haskell-ghci-options
+;;                   '("-ferror-spans"
+;;                     "-fdefer-typed-holes"
+;;                     "-fmax-relevant-binds=0"
+;;                     "-fno-diagnostics-show-caret"
+;;                     ))
+;;             (setq haskell-process-args-stack-ghci
+;;                   (list (concat "--ghci-options=" (string-join haskell-ghci-options " "))
+;;                         "--no-build"
+;;                         "--no-load"))
+;;             (setq haskell-font-lock-symbols-alist
+;;                   '(("\\" . "λ")
+;;                     ("." "∘" haskell-font-lock-dot-is-not-composition)
+;;                     ("forall" . "∀")))
+;;             (setq haskell-interactive-popup-errors nil)
+;;             (setq haskell-indentation-left-offset 2)
+;;             (setq haskell-indentation-layout-offset 2)
+;;             (setq haskell-tags-on-save t)))
 
 ;; ormolu formatting
 ;; https://github.com/vyorkin/ormolu.el
@@ -269,13 +355,14 @@
 (defalias 'filter-lines 'keep-lines)
 
 ;; Elm
-(setq elm-tags-on-save t)
-(add-hook 'elm-mode-hook #'elm-oracle-setup-completion)
-(setq elm-format-on-save t)
-(setq elm-tags-exclude-elm-stuff nil)
+;; (setq elm-tags-on-save t)
+;; (add-hook 'elm-mode-hook #'elm-oracle-setup-completion)
+;; (setq elm-format-on-save t)
+;; (setq elm-tags-exclude-elm-stuff nil)
 
 ;; magit
-(require 'magit)
+(use-package magit
+  :ensure t)
 (global-set-key "\C-xg" 'magit-status)
 (global-set-key (kbd "C-x M-g") 'magit-dispatch-popup)
 
@@ -283,106 +370,24 @@
 (require 'markdown-mode)
 (setq markdown-command "pandoc -s --highlight-style pygments")
 
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(coq-compile-before-require t)
- '(haskell-stylish-on-save nil)
- '(idris-interpreter-flags (quote ("-p" "contrib")))
- '(idris-interpreter-path "idris")
- '(idris-log-events t)
- '(package-selected-packages
-   (quote
-    (plantuml-mode ormolu proof-general gnuplot-mode graphviz-dot-mode powershell rainbow-delimiters lsp-haskell lsp-ui lsp-mode typo typopunct ess dockerfile-mode org-mu4e mu4e org-mime ag magit expand-region company-go go-autocomplete go-complete go-mode go company-coq helm-core helm helm-ag-r helm-company helm-git helm-google helm-hoogle helm-idris helm-ls-git markdown-mode multiple-cursors magit-gh-pulls intero flx-isearch flx-ido)))
- '(safe-local-variable-values
-   (quote
-    ((intero-targets "sensei:lib" "sensei:exe:sensei-exe" "sensei:test:sensei-test")
-     (intero-targets "minilang:lib" "minilang:exe:mli" "minilang:test:minilang-test")
-     (intero-targets "rex-api:lib" "rex-api:exe:rex-server" "rex-api:test:rex-tests")
-     (intero-targets "pet-store:lib" "pet-store:exe:driver-petstore" "pet-store:exe:mock-petstore" "pet-store:test:tests" "pet-store-backend:lib" "pet-store-backend:exe:pet-store-server")
-     (intero-targets "pet-store-backend:lib" "pet-store-backend:exe:pet-store-server" "pet-store-backend:test:runner")
-     (intero-targets "rex-cli:lib" "rex-cli:exe:rex-cli" "rex-cli:test:rex-tests" "rex-contracts:lib" "rex-depgraph:lib" "rex-depgraph:test:rex-depgraph-tests" "rex-feeder:lib" "rex-feeder:test:rex-feeder-tests" "rex-tester:lib" "rex-tester:test:rex-tester-tests")
-     (intero-targets "rex-depgraph:lib" "rex-depgraph:exe:rex-callgraph" "rex-depgraph:exe:rex-generator" "rex-depgraph:test:rex-depgraph-tests")
-     (intero-targets "tents-and-trees:lib" "tents-and-trees:exe:tents-and-trees-exe" "tents-and-trees:test:tents-and-trees-test")
-     (intero-targets "hpaie:lib" "hpaie:exe:assign-keys" "hpaie:exe:gen-ledger" "hpaie:test:hpaie-test")
-     (intero-targets "circuit-breaker:lib" "circuit-breaker:exe:circuit-breaker" "circuit-breaker:test:circuit-breaker-test" "log-controller:lib" "log-controller:exe:control" "log-controller:test:log-controller-test" "one-log:lib" "one-log:exe:one-log-exe" "one-log:test:one-log-test" "pet-store:lib" "pet-store:exe:driver-petstore" "pet-store:exe:mock-petstore" "pet-store:test:tests" "pet-store-backend:lib" "pet-store-backend:exe:pet-store-server")
-     (time-stamp-active . t)
-     (intero-targets "day7:exe:day7" "intcode:lib")
-     (intero-targets "day7:exe:day7")
-     (intero-targets "survey:lib" "survey:exe:quizz" "survey:test:survey-test")
-     (intero-targets "haskell-sqlite:lib" "haskell-sqlite:exe:haskell-sqlite-exe" "haskell-sqlite:test:haskell-sqlite-test")
-     (haskell-indentation-where-pre-offset . 4)
-     (haskell-indentation-starter-offset . 4)
-     (haskell-indentation-left-offset . 4)
-     (haskell-indentation-layout-offset . 4)
-     (haskell-indent-spaces . 4)
-     (intero-targets "deptrack-core:lib" "deptrack-devops:lib" "deptrack-devops-examples:lib" "deptrack-devops-examples:exe:deptrack-devops-example-devbox" "deptrack-devops-recipes:lib")
-     (intero-targets "sym-test:lib" "sym-test:exe:test-runner" "sym-test:test:tasty" "txe:lib" "txe:exe:humanize" "txe:exe:txe" "txe:test:tasty")
-     (intero-targets "sym-client:lib" "sym-client:test:tasty" "sym-test:lib" "sym-test:exe:test-runner" "sym-test:test:tasty")
-     (intero-targets "sym-client:lib" "sym-test:lib" "sym-test:exe:test-runner" "sym-test:test:tasty")
-     (intero-targets "sym-client:lib" "sym-core:lib" "sym-test:lib" "sym-test:exe:test-runner" "sym-test:test:tasty")
-     (intero-targets "sym-client:lib" "sym-core:lib" "sym-crypto:lib" "sym-test:lib" "sym-test:exe:test-runner" "sym-test:test:tasty")
-     (intero-targets "sym-client:lib" "sym-core:lib" "txe:lib")
-     (intero-targets "sym-client:lib" "txe:lib")
-     (intero-targets "sym-client:lib" "sym-crypto:lib" "sym-http:lib" "sym-logging:lib" "sym-test:lib" "sym-test:exe:test-runner" "sym-test:test:tasty" "sym-util:lib" "txe:lib")
-     (intero-targets "sym-logging:lib" "sym-logging:test:tasty" "txe:lib" "txe:exe:humanize" "txe:exe:txe" "txe:test:tasty")
-     (intero-targets "sym-test:lib" "sym-test:exe:test-runner" "sym-test:test:tasty")
-     (intero-targets "sym-client:lib" "sym-client:exe:contract" "sym-client:test:tasty" "sym-test:lib" "sym-test:exe:test-smartlog" "sym-test:test:tasty" "sym-util:lib" "sym-util:test:tasty" "txe:lib" "txe:exe:humanize" "txe:exe:txe" "txe:test:tasty")
-     (intero-targets "sym-client:lib" "sym-client:exe:contract" "sym-client:test:tasty" "sym-test:lib" "sym-test:exe:test-smartlog" "sym-test:test:tasty" "sym-util:lib" "sym-util:test:tasty")
-     (intero-targets "sym-client:lib" "sym-client:test:tasty" "txe:lib" "txe:exe:humanize" "txe:exe:txe" "txe:test:tasty")
-     (intero-targets "sym-client:lib" "sym-client:test:tasty" "sym-util:lib" "sym-util:test:tasty" "txe:lib" "txe:exe:txe" "txe:test:tasty")
-     (intero-targets "sym-client:lib" "sym-client:test:contract" "sym-client:test:tasty" "sym-util:lib" "sym-util:test:tasty")
-     (intero-targets "sym-client:lib" "sym-client:test:tasty" "sym-util:lib" "sym-util:test:tasty")
-     (intero-targets "sym-util:lib" "sym-util:test:tasty" "txe:lib" "txe:exe:humanize" "txe:exe:txe" "txe:test:tasty")
-     (intero-targets "txe:lib" "txe:exe:humanize" "txe:exe:txe" "txe:test:tasty")
-     (intero-targets "sym-http:lib" "sym-http:test:tasty")
-     (intero-targets "sym-http:lib" "sym-http:test:tasty" "sym-logging:lib" "sym-logging:test:tasty" "sym-util:lib" "sym-util:test:tasty" "txe:lib" "txe:exe:txe" "txe:test:tasty")
-     (intero-targets "sym-client:lib" "sym-client:test:tasty" "sym-http:lib" "sym-http:test:tasty" "sym-logging:lib" "sym-logging:test:tasty" "sym-util:lib" "sym-util:test:tasty" "txe:lib" "txe:exe:txe" "txe:test:tasty")
-     (intero-targets "sym-client:lib" "sym-client:test:tasty" "sym-test:lib" "sym-test:exe:test-smartlog" "sym-test:test:tasty" "sym-util:lib" "sym-util:test:tasty")
-     (intero-targets "sym-client:lib" "sym-client:test:tasty" "sym-test:lib" "sym-test:exe:test-smartlog" "sym-test:test:tasty")
-     (intero-targets "sym-logging:lib" "sym-logging:test:tasty" "sym-util:lib" "sym-util:test:tasty")
-     (coq-prog-args "-emacs" "-R" "/Users/arnaud/projects/cpdt/src" "Cpdt")
-     (coq-prog-args "-emacs" "-R" "src" "Cpdt")
-     (intero-targets "sym-cli:lib" "sym-test:lib" "sym-test:exe:test-smartlog" "sym-test:test:tasty" "txe:lib")
-     (intero-targets "foo:lib" "foo:exe:foo-cli" "foo:exe:foo-service" "foo:test:tasty")
-     (haskell-stylish-on-save)
-     (stylish-haskell-on-save)
-     (intero-targets "sym-cli:lib" "sym-cli:exe:symbiont" "sym-cli:test:tasty" "sym-http:lib" "sym-http:test:tasty" "sym-logging:lib" "sym-util:lib" "sym-util:test:tasty")
-     (intero-targets "sym-cli:lib" "sym-test:lib" "sym-test:exe:test-assembly" "sym-test:test:tasty" "txe:lib")
-     (intero-targets "sym-logging:lib" "sym-logging:test:tasty" "sym-util:lib" "sym-util:test:tasty" "txe:lib" "txe:exe:txe" "txe:test:tasty")
-     (intero-targets "sym-proto:lib" "sym-proto:test:tasty")
-     (intero-targets "sym-util:lib" "sym-util:test:tasty" "txe:lib" "txe:exe:txe" "txe:test:tasty")
-     (intero-targets "sym-logging:lib" "sym-logging:test:tasty" "txe:lib" "txe:exe:txe" "txe:test:tasty")
-     (intero-targets "txe:lib" "txe:exe:txe" "txe:test:tasty")
-     (intero-targets "sym-crypto:lib" "sym-logging:lib" "sym-test:lib" "sym-test:exe:test-assembly" "sym-test:test:tasty" "sym-util:lib" "txe:lib")))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
-
-
-;; https://github.com/atykhonov/google-translate
-(require 'google-translate)
-(require 'google-translate-default-ui)
-(global-set-key "\C-ct" 'google-translate-at-point)
-(global-set-key "\C-cT" 'google-translate-query-translate)
-
 ;; Python
 ;; requires (package-install 'elpy)
 ;; https://github.com/jorgenschaefer/elpy
+(use-package elpy
+  :ensure t)
 (elpy-enable)
 
 ;; Idris
 ;; development mode
-(add-to-list 'load-path (concat (getenv "HOME") "/projects/idris/idris-mode"))
-(require 'idris-mode)
+(use-package prop-menu
+  :ensure t)
+
+(add-to-list 'load-path (concat (getenv "HOME") "/projects/idris/idris2-mode"))
+(require 'idris2-mode)
 
 ;; projectile
-(require 'projectile)
+(use-package projectile
+  :ensure t)
 (define-key projectile-mode-map (kbd "s-p") 'projectile-command-map)
 (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
 (projectile-mode +1)
@@ -422,26 +427,67 @@
 (define-key js-mode-map (kbd "M-.") nil)
 
 (add-hook 'js2-mode-hook (lambda ()
-  (add-hook 'xref-backend-functions #'xref-js2-xref-backend nil t)))
+                           (add-hook 'xref-backend-functions #'xref-js2-xref-backend nil t)))
 
-(use-package typescript-mode
- :ensure t)
-(use-package ansi-color
- :ensure t)
 (defun colorize-compilation-buffer ()
   (ansi-color-apply-on-region compilation-filter-start (point-max)))
 (add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
 
-(use-package web-mode
- :ensure t)
+(use-package tide
+  :ensure t)
+
+(defun setup-tide-mode ()
+  (interactive)
+  (tide-setup)
+  (flycheck-mode +1)
+  (setq flycheck-check-syntax-automatically '(save mode-enabled))
+  (eldoc-mode +1)
+  (tide-hl-identifier-mode +1)
+  ;; company is an optional dependency. You have to
+  ;; install it separately via package-install
+  ;; `M-x package-install [ret] company`
+  (company-mode +1))
+
+;; aligns annotation to the right hand side
+(setq company-tooltip-align-annotations t)
+
+;; formats the buffer before saving
+(add-hook 'before-save-hook 'tide-format-before-save)
+
+(add-hook 'typescript-mode-hook #'setup-tide-mode)
+
+(add-hook 'js2-mode-hook #'setup-tide-mode)
+(add-hook 'js-mode-hook #'setup-tide-mode)
+(add-hook 'js2-mode-hook
+          #'(lambda ()
+              (define-key js2-mode-map "\C-ci" 'js-doc-insert-function-doc)
+              (define-key js2-mode-map "@" 'js-doc-insert-tag)))
+
+;; configure javascript-tide checker to run after your default javascript checker
+(flycheck-add-next-checker 'javascript-eslint 'javascript-tide 'append)
+(require 'web-mode)
+(add-to-list 'auto-mode-alist '("\\.jsx\\'" . web-mode))
 (add-to-list 'auto-mode-alist '("\\.tsx\\'" . web-mode))
+(add-hook 'web-mode-hook
+          (lambda ()
+            (when (string-equal "jsx" (file-name-extension buffer-file-name))
+              (setup-tide-mode))))
 (add-hook 'web-mode-hook
           (lambda ()
             (when (string-equal "tsx" (file-name-extension buffer-file-name))
               (setup-tide-mode))))
-
-;; enable typescript-tslint checker
+;; configure jsx-tide checker to run after your default jsx checker
+(flycheck-add-mode 'javascript-eslint 'web-mode)
 (flycheck-add-mode 'typescript-tslint 'web-mode)
+
+(flycheck-add-next-checker 'javascript-eslint 'jsx-tide 'append)
+
+(use-package tide
+  :ensure t
+  :after (typescript-mode company flycheck)
+  :hook ((typescript-mode . tide-setup)
+         (typescript-mode . tide-hl-identifier-mode)
+         (before-save . tide-format-before-save)))
 
 ;; supports .editorconfig file in project
 (use-package editorconfig
@@ -500,21 +546,21 @@
 ;; <tab> to navigate to links, <RET> to open them in browser
 (add-hook 'mu4e-view-mode-hook
   (lambda()
-;; try to emulate some of the eww key-bindings
-(local-set-key (kbd "<RET>") 'mu4e~view-browse-url-from-binding)
-(local-set-key (kbd "<tab>") 'shr-next-link)
-(local-set-key (kbd "<backtab>") 'shr-previous-link)))
+    ;; try to emulate some of the eww key-bindings
+    (local-set-key (kbd "<RET>") 'mu4e~view-browse-url-from-binding)
+    (local-set-key (kbd "<tab>") 'shr-next-link)
+    (local-set-key (kbd "<backtab>") 'shr-previous-link)))
 
 ;; from https://www.reddit.com/r/emacs/comments/bfsck6/mu4e_for_dummies/elgoumx
-(add-hook 'mu4e-headers-mode-hook
-      (defun my/mu4e-change-headers ()
-        (interactive)
-        (setq mu4e-headers-fields
-              `((:human-date . 25) ;; alternatively, use :date
-                (:flags . 6)
-                (:from . 22)
-                (:thread-subject . ,(- (window-body-width) 70)) ;; alternatively, use :subject
-                (:size . 7)))))
+;; (add-hook 'mu4e-headers-mode-hook
+;;       (defun my/mu4e-change-headers ()
+;;         (interactive)
+;;         (setq mu4e-headers-fields
+;;               `((:human-date . 25) ;; alternatively, use :date
+;;                 (:flags . 6)
+;;                 (:from . 22)
+;;                 (:thread-subject . ,(- (window-body-width) 70)) ;; alternatively, use :subject
+;;                 (:size . 7)))))
 
 ;; if you use date instead of human-date in the above, use this setting
 ;; give me ISO(ish) format date-time stamps in the header list
@@ -550,8 +596,9 @@
 
 ;; convert org mode to HTML automatically
 (setq org-mu4e-convert-to-html t)
-(define-key mu4e-headers-mode-map (kbd "C-c c") 'org-mu4e-store-and-capture)
-(define-key mu4e-view-mode-map    (kbd "C-c c") 'org-mu4e-store-and-capture)
+(setq org-mu4e-link-query-in-headers-mode nil)
+(define-key mu4e-headers-mode-map (kbd "C-c c") 'mu4e-org-store-and-capture)
+(define-key mu4e-view-mode-map    (kbd "C-c c") 'mu4e-org-store-and-capture)
 
 ;;from vxlabs config
 ;; show full addresses in view message (instead of just names)
@@ -590,18 +637,69 @@
                 (message-send-mail-function . smtpmail-send-it)
                 (smtpmail-smtp-user . "abailly@palo-it.com")
                 (smtpmail-starttls-credentials . (("smtp.gmail.com" 587 nil nil)))
-                (smtpmail-auth-credentials . (expand-file-name "~/.authinfo.gpg"))
+                (smtpmail-auth-credentials . (expand-file-name "~/.authinfo.palo.gpg"))
                 (smtpmail-default-smtp-server . "smtp.gmail.com")
                 (smtpmail-smtp-server . "smtp.gmail.com")
                 (smtpmail-smtp-service . 587)
                 (smtpmail-debug-info . t)
                 (smtpmail-debug-verbose . t)
                 (mu4e-maildir-shortcuts . ( ("/palo-it-gmail/INBOX"            . ?i)
-                                            ("/palo-it-gmail/[palo-it].Sent Mail" . ?s)
-                                            ("/palo-it-gmail/[palo-it].Bin"       . ?t)
-                                            ("/palo-it-gmail/[palo-it].All Mail"  . ?a)
-                                            ("/palo-it-gmail/[palo-it].Starred"   . ?r)
-                                            ("/palo-it-gmail/[palo-it].drafts"    . ?d)
+                                            ))))
+       (make-mu4e-context
+        :name "Plus" ;;email plus
+        :enter-func (lambda () (mu4e-message "Entering context plus"))
+        :leave-func (lambda () (mu4e-message "Leaving context plus"))
+        :match-func (lambda (msg)
+                      (when msg
+                        (mu4e-message-contact-field-matches
+                         msg '(:from :to :cc :bcc) "arnaud@plusplatform.io")))
+        :vars '((user-mail-address . "arnaud@plusplatform.io")
+                (user-full-name . "Arnaud Bailly")
+                (mu4e-sent-folder . "/plus-gmail/[plus].Sent Mail")
+                (mu4e-drafts-folder . "/plus-gmail/[plus].drafts")
+                (mu4e-trash-folder . "/plus-gmail/[plus].Bin")
+                (mu4e-compose-signature . (concat "Arnaud Bailly\n"
+                                                  "Chief Architect\n"))
+                (mu4e-compose-format-flowed . t)
+                (smtpmail-queue-dir . "~/Maildir/plus-gmail/queue/cur")
+                (message-send-mail-function . smtpmail-send-it)
+                (smtpmail-smtp-user . "arnaud@plusplatform.io")
+                (smtpmail-starttls-credentials . (("smtp.gmail.com" 587 nil nil)))
+                (smtpmail-auth-credentials . (expand-file-name "~/.authinfo.plus.gpg"))
+                (smtpmail-default-smtp-server . "smtp.gmail.com")
+                (smtpmail-smtp-server . "smtp.gmail.com")
+                (smtpmail-smtp-service . 587)
+                (smtpmail-debug-info . t)
+                (smtpmail-debug-verbose . t)
+                (mu4e-maildir-shortcuts . ( ("/plus-gmail/INBOX"            . ?l)
+                                            ))))
+       (make-mu4e-context
+        :name "perso" ;;email perso
+        :enter-func (lambda () (mu4e-message "Entering context perso"))
+        :leave-func (lambda () (mu4e-message "Leaving context perso"))
+        :match-func (lambda (msg)
+                      (when msg
+                        (mu4e-message-contact-field-matches
+                         msg '(:from :to :cc :bcc) "arnaud.oqube@gmail.com")))
+        :vars '((user-mail-address . "arnaud.oqube@gmail.com")
+                (user-full-name . "Arnaud Bailly")
+                (mu4e-sent-folder . "/perso-gmail/[perso].Sent Mail")
+                (mu4e-drafts-folder . "/perso-gmail/[perso].drafts")
+                (mu4e-trash-folder . "/perso-gmail/[perso].Bin")
+                (mu4e-compose-signature . (concat "Arnaud Bailly\n"
+                                                  "[Emacs 25, org-mode 9, mu4e 1.0]\n"))
+                (mu4e-compose-format-flowed . t)
+                (smtpmail-queue-dir . "~/Maildir/perso-gmail/queue/cur")
+                (message-send-mail-function . smtpmail-send-it)
+                (smtpmail-smtp-user . "arnaud.oqube@gmail.com")
+                (smtpmail-starttls-credentials . (("smtp.gmail.com" 587 nil nil)))
+                (smtpmail-auth-credentials . (expand-file-name "~/.authinfo.gpg"))
+                (smtpmail-default-smtp-server . "smtp.gmail.com")
+                (smtpmail-smtp-server . "smtp.gmail.com")
+                (smtpmail-smtp-service . 587)
+                (smtpmail-debug-info . t)
+                (smtpmail-debug-verbose . t)
+                (mu4e-maildir-shortcuts . ( ("/perso-gmail/INBOX"            . ?p)
                                             ))))
        (make-mu4e-context
         :name "solina"
@@ -638,87 +736,65 @@
                 (smtpmail-smtp-service . 587)
                 (smtpmail-debug-info . t)
                 (smtpmail-debug-verbose . t)
-                (mu4e-maildir-shortcuts . ( ("/solina-gmail/INBOX"            . ?i)
-                                            ("/solina-gmail/[solina].Sent Mail" . ?s)
-                                            ("/solina-gmail/[solina].Bin"       . ?t)
-                                            ("/solina-gmail/[solina].All Mail"  . ?a)
-                                            ("/solina-gmail/[solina].Starred"   . ?r)
-                                            ("/solina-gmail/[solina].drafts"    . ?d)
+                (mu4e-maildir-shortcuts . ( ("/solina-gmail/INBOX"            . ?s)
                                             ))))
-       ;; (make-mu4e-context
-       ;;  :name "personal" ;;for acc2-gmail
-       ;;  :enter-func (lambda () (mu4e-message "Entering context personal"))
-       ;;  :leave-func (lambda () (mu4e-message "Leaving context personal"))
-       ;;  :match-func (lambda (msg)
-       ;;    (when msg
-       ;;  (mu4e-message-contact-field-matches
-       ;;   msg '(:from :to :cc :bcc) "acc2@gmail.com")))
-       ;;  :vars '((user-mail-address . "acc2@gmail.com")
-       ;;    (user-full-name . "User Account2")
-       ;;    (mu4e-sent-folder . "/acc2-gmail/[acc2].Sent Mail")
-       ;;    (mu4e-drafts-folder . "/acc2-gmail/[acc2].drafts")
-       ;;    (mu4e-trash-folder . "/acc2-gmail/[acc2].Trash")
-       ;;    (mu4e-compose-signature . (concat "Informal Signature\n" "Emacs is awesome!\n"))
-       ;;    (mu4e-compose-format-flowed . t)
-       ;;    (smtpmail-queue-dir . "~/Maildir/acc2-gmail/queue/cur")
-       ;;    (message-send-mail-function . smtpmail-send-it)
-       ;;    (smtpmail-smtp-user . "acc2")
-       ;;    (smtpmail-starttls-credentials . (("smtp.gmail.com" 587 nil nil)))
-       ;;    (smtpmail-auth-credentials . (expand-file-name "~/.authinfo.gpg"))
-       ;;    (smtpmail-default-smtp-server . "smtp.gmail.com")
-       ;;    (smtpmail-smtp-server . "smtp.gmail.com")
-       ;;    (smtpmail-smtp-service . 587)
-       ;;    (smtpmail-debug-info . t)
-       ;;    (smtpmail-debug-verbose . t)
-       ;;    (mu4e-maildir-shortcuts . ( ("/acc2-gmail/INBOX"            . ?i)
-       ;;  			("/acc2-gmail/[acc2].Sent Mail" . ?s)
-       ;;  			("/acc2-gmail/[acc2].Trash"     . ?t)
-       ;;  			("/acc2-gmail/[acc2].All Mail"  . ?a)
-       ;;  			("/acc2-gmail/[acc2].Starred"   . ?r)
-       ;;  			("/acc2-gmail/[acc2].drafts"    . ?d)
-       ;;  			)
        ))
 
+;; mu4e goodies
+;; https://github.com/panjie/mu4e-goodies
+(add-to-list 'load-path (concat (getenv "HOME") "/.emacs.d/mu4e-goodies"))
+(require 'mu4e-goodies)
+
+(defun my-contact-processor (contact)
+  (cond
+    ((string-match "paysdeloire.fr" contact)
+       (replace-regexp-in-string "paysdeloire.fr" "paysdelaloire.fr" contact))
+    (t contact)))
+
+(setq mu4e-contact-process-function 'my-contact-processor)
+
+;; (start-process-shell-command "test-mu4e" "test-mu4e"
+;;                             mu4e-get-mail-command)
 ;; gpg
 ;; from https://github.com/kensanata/ggg#mac
-(defun gpg-restart-agent ()
-  "This kills and restarts the gpg-agent.
+;; (defun gpg-restart-agent ()
+;;   "This kills and restarts the gpg-agent.
 
-To kill gpg-agent, we use killall. If you know that the agent is
-OK, you should just reload the environment file using
-`gpg-reload-agent-info'."
-  (interactive)
-  (shell-command "killall gpg-agent")
-  (shell-command "gpg-agent --daemon --enable-ssh-support --write-env-file")
-  ;; read the environment file instead of parsing the output
-  (gpg-reload-agent-info))
+;; To kill gpg-agent, we use killall. If you know that the agent is
+;; OK, you should just reload the environment file using
+;; `gpg-reload-agent-info'."
+;;   (interactive)
+;;   (shell-command "killall gpg-agent")
+;;   (shell-command "gpg-agent --daemon --enable-ssh-support --write-env-file")
+;;   ;; read the environment file instead of parsing the output
+;;   (gpg-reload-agent-info))
 
-(defun gpg-reload-agent-info ()
-  "Reload the ~/.gpg-agent-info file."
-  (interactive)
-  (let ((file (expand-file-name "~/.gpg-agent-info")))
-    (when (file-readable-p file)
-      (with-temp-buffer
-        (insert-file-contents file)
-        (goto-char (point-min))
-        (while (re-search-forward "\\([A-Z_]+\\)=\\(.*\\)" nil t)
-          (setenv (match-string 1) (match-string 2)))))))
+;; (defun gpg-reload-agent-info ()
+;;   "Reload the ~/.gpg-agent-info file."
+;;   (interactive)
+;;   (let ((file (expand-file-name "~/.gpg-agent-info")))
+;;     (when (file-readable-p file)
+;;       (with-temp-buffer
+;;         (insert-file-contents file)
+;;         (goto-char (point-min))
+;;         (while (re-search-forward "\\([A-Z_]+\\)=\\(.*\\)" nil t)
+;;           (setenv (match-string 1) (match-string 2)))))))
 
-(defun gpg-agent-startup ()
-  "Initialize the gpg-agent if necessary.
+;; (defun gpg-agent-startup ()
+;;   "Initialize the gpg-agent if necessary.
 
-Note that sometimes the gpg-agent can be up and running and still
-be useless, in which case you should restart it using
-`gpg-restart-agent'."
-  (gpg-reload-agent-info)
-  (let ((pid (getenv "SSH_AGENT_PID")))
-    (when (and (fboundp 'list-system-processes)
-               (or (not pid)
-                   (not (member (string-to-number pid)
-                                (list-system-processes)))))
-      (gpg-restart-agent))))
+;; Note that sometimes the gpg-agent can be up and running and still
+;; be useless, in which case you should restart it using
+;; `gpg-restart-agent'."
+;;   (gpg-reload-agent-info)
+;;   (let ((pid (getenv "SSH_AGENT_PID")))
+;;     (when (and (fboundp 'list-system-processes)
+;;                (or (not pid)
+;;                    (not (member (string-to-number pid)
+;;                                 (list-system-processes)))))
+;;       (gpg-restart-agent))))
 
-(gpg-agent-startup)
+;; (gpg-agent-startup)
 
 (require 'go-mode)
 
@@ -734,6 +810,7 @@ be useless, in which case you should restart it using
 (add-to-list 'auto-mode-alist '("\\.sr.*\\'" . powerbuilder-mode))
 
 ;; kill all cal-* buffers
+;; inspired by https://www.emacswiki.org/emacs/KillingBuffers#toc3
 (defun kill-cal-buffers ()
   (interactive)
   (mapc (lambda (buffer)
@@ -743,4 +820,82 @@ be useless, in which case you should restart it using
               (message "Killed buffer %s" buf))))
         (buffer-list)))
 
-(global-set-key (kbd "C-x C-C") 'kill-cal-buffers)
+(global-set-key (kbd "C-x C-S-C") 'kill-cal-buffers)
+
+;; elegance, from https://github.com/rougier/elegant-emacs
+;; requires installing Roboto Mono and Fira Code fonts
+(save-place-mode 1)
+(load-file "/Users/arnaud/.emacs.d/elegance.el")
+
+;; CRUX
+;; https://github.com/bbatsov/crux
+(recentf-mode 1)
+
+(use-package crux
+  :ensure t
+  :bind (([remap move-beginning-of-line] . crux-move-beginning-of-line)
+         ("C-c o" . crux-open-with)
+         ("C-c f" . crux-recentf-find-file)
+         ("C-c D" . crux-delete-file-and-buffer)
+         ("C-c I" . crux-find-user-init-file)
+         ([(shift return)] . crux-smart-open-line)
+         ("s-r" . crux-recentf-find-file)
+         ("C-<backspace>" . crux-kill-line-backwards)
+         ([remap kill-whole-line] . crux-kill-whole-line)))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; https://www.emacswiki.org/emacs/InsertFileName
+(defun bjm/insert-file-name (filename &optional args)
+  "Insert name of file FILENAME into buffer after point.
+
+  Prefixed with \\[universal-argument], expand the file name to
+  its fully canocalized path.  See `expand-file-name'.
+
+  Prefixed with \\[negative-argument], use relative path to file
+  name from current directory, `default-directory'.  See
+  `file-relative-name'.
+
+  The default with no prefix is to insert the file name exactly as
+  it appears in the minibuffer prompt."
+  ;; Based on insert-file in Emacs -- ashawley 20080926
+  (interactive "*fInsert file name: \nP")
+  (cond ((eq '- args)
+         (insert (expand-file-name filename)))
+        ((not (null args))
+         (insert filename))
+        (t
+         (insert (file-relative-name filename)))))
+
+;; bind it
+(global-set-key (kbd "C-c b i") 'bjm/insert-file-name)
+
+;; https://blog.sulami.xyz/posts/literate-calc-mode/
+;; couldn't resist trying this
+(use-package literate-calc-mode
+  :ensure t)
+
+(use-package outshine
+  :init (add-hook 'haskell-mode-hook
+          (lambda ()
+            (set (make-local-variable 'outline-regexp)
+                                      "-- \\*+")
+            (outline-minor-mode)))
+  :ensure t)
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   '("4bca89c1004e24981c840d3a32755bf859a6910c65b829d9441814000cf6c3d0" "e6ff132edb1bfa0645e2ba032c44ce94a3bd3c15e3929cdf6c049802cf059a2a" "99ea831ca79a916f1bd789de366b639d09811501e8c092c85b2cb7d697777f93" default))
+ '(package-selected-packages
+   '(powershell yaml-mode xref-js2 web-mode use-package tide terraform-mode srv rainbow-delimiters prop-menu projectile plantuml-mode outshine org-roam-server org-mime magit lsp-ui lsp-haskell literate-calc-mode js2-refactor js-doc intero helm graphviz-dot-mode go-mode go gnuplot-mode fsm folding fira-code-mode feature-mode expand-region ess elpy elm-mode elfeed eglot editorconfig dotnet doom-themes dockerfile-mode csharp-mode crux ag adoc-mode))
+ '(safe-local-variable-values
+   '((intero-targets "hpaie:lib" "hpaie:exe:assign-keys" "hpaie:exe:gen-ledger" "hpaie:test:hpaie-test"))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
