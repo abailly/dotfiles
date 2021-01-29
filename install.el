@@ -32,4 +32,6 @@
           yaml-mode
           use-package
           elm-mode
-          terraform-mode))
+          terraform-mode
+          nix-mode
+          nix-sandbox))

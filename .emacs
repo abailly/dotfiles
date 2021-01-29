@@ -1,3 +1,4 @@
+
 ;; General layout
 
 ;; package installation
@@ -29,7 +30,35 @@
   (xterm-mouse-mode t)
   (defun track-mouse (e))
   (setq mouse-sel-mode t)
-  )
+  ;; map super+alpha key
+  (cl-loop for char from ?a to ?z
+           do (define-key input-decode-map (format "\e[1;P%c" char) (kbd (format "s-%c" char))))
+
+  ;; https://stackoverflow.com/questions/10660060/how-do-i-bind-c-in-emacs/40222318#40222318
+  (defun my/global-map-and-set-key (key command &optional prefix suffix)
+    "`my/map-key' KEY then `global-set-key' KEY with COMMAND.
+ PREFIX or SUFFIX can wrap the key when passing to `global-set-key'."
+    (my/map-key key)
+    (global-set-key (kbd (concat prefix key suffix)) command))
+
+  (defun my/map-key (key)
+    "Map KEY from escape sequence \"\e[emacs-KEY\."
+    (define-key function-key-map (concat "\e[emacs-" key) (kbd key))))
+
+(my/map-key "s-l")
+(my/map-key "C->")
+(my/map-key "C-<")
+
+(when window-system
+  ;; https://mblog.sumtypeofway.com/posts/emacs-config.html
+  (use-package doom-themes
+    :config
+    (let ((chosen-theme 'doom-challenger-deep))
+      (doom-themes-visual-bell-config)
+      (doom-themes-org-config)
+      (setq doom-challenger-deep-brighter-comments t
+            doom-challenger-deep-brighter-modeline t)
+      (load-theme chosen-theme))))
 
 (require 'cl-lib)
 (cl-loop for char from ?a to ?z
@@ -63,17 +92,12 @@
 (global-hl-line-mode 1)
 (global-set-key "\C-c\C-o" 'browse-url-at-point)
 
-;; https://blog.sumtypeofway.com/posts/emacs-config.html
-(use-package doom-themes
-  :config
-  (let ((chosen-theme 'doom-one-light))
-    (doom-themes-visual-bell-config)
-    (doom-themes-org-config)
-    (setq doom-challenger-deep-brighter-comments t
-          doom-challenger-deep-brighter-modeline t)
-    (load-theme chosen-theme)))
-
 (show-paren-mode)
+
+(use-package direnv
+ :ensure t
+ :config
+ (direnv-mode))
 
 (use-package rainbow-delimiters
   :ensure t
@@ -129,8 +153,6 @@
 ;; Org stuff
 (require 'org)
 (require 'org-protocol)
-;; to get shortcuts for inserting code blocsk
-(require 'org-tempo)
 
 
 (setq org-directory "~/log")
@@ -189,52 +211,6 @@
 (setq org-time-clocksum-format
       '(:hours "%d" :require-hours t :minutes ":%02d" :require-minutes t))
 
-(setq org-roam-capture-templates
-        '(("d" "default" plain (function org-roam--capture-get-point)
-           "%?"
-           :file-name "${slug}"
-           :head "#+TITLE: ${title}\n"
-           :unnarrowed t)
-          ("p" "private" plain (function org-roam--capture-get-point)
-           "%?"
-           :file-name "private-${slug}"
-           :head "#+TITLE: ${title}\n"
-           :unnarrowed t)))
-
-(setq org-roam-graph-viewer "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome") ;; will use view-file by default.
-
-(use-package org-roam
-  :hook
-  (after-init . org-roam-mode)
-  :custom
-  (org-roam-directory "~/log/roam")
-  :bind (:map org-roam-mode-map
-              (("C-c n l" . org-roam)
-               ("C-c n f" . org-roam-find-file)
-               ("C-c n g" . org-roam-show-graph)
-               ("C-c n d" . org-roam-dailies-today))
-              :map org-mode-map
-              (("C-c n i" . org-roam-insert))))
-
-(use-package org-roam-server
-  :after org-roam
-  :load-path "~/org-roam-server/"
-  :ensure nil
-  :config
-  (setq org-roam-server-host "127.0.0.1"
-        org-roam-server-port 8080
-        org-roam-server-authenticate nil
-        org-roam-server-export-inline-images t
-        org-roam-server-serve-files nil
-        org-roam-server-served-file-extensions '("pdf" "mp4" "ogv")
-        org-roam-server-network-poll t
-        org-roam-server-network-arrows nil
-        org-roam-server-network-label-truncate t
-        org-roam-server-network-label-truncate-length 60
-        org-roam-server-network-label-wrap-length 20))
-
-(require 'org-roam-protocol)
-
 ;; multiple-cursors
 ;; https://github.com/magnars/multiple-cursors.el
 (use-package multiple-cursors
@@ -271,40 +247,79 @@
 (add-hook 'find-file-hook 'sm-try-smerge t)
 
 ;; Haskell stuff
-(setenv "PATH" (concat (getenv "HOME") "/.local/bin:" "/usr/local/bin:" (getenv "PATH")))
+(setenv "PATH"
+        (concat (getenv "HOME") "/.local/bin:"
+                (getenv "HOME") "/.cabal/bin:"
+                (getenv "HOME") "/.ghcup/bin:"
+                "/usr/local/bin:"
+                (getenv "PATH")))
 
 (setq exec-path
       (reverse
        (append
         (reverse exec-path)
-        (list (concat (getenv "HOME") "/.local/bin")  "/usr/local/bin" ))))
+        (list (concat (getenv "HOME") "/.local/bin")
+              (concat (getenv "HOME") "/.cabal/bin")
+              (concat (getenv "HOME") "/.ghcup/bin")
+              "/usr/local/bin" ))))
+
+(use-package nix-sandbox)
 
 ;;LSP Haskell
 (use-package flycheck
   :ensure t
   :init
   (global-flycheck-mode t))
+
 (use-package yasnippet
   :ensure t)
-(use-package lsp-mode
-  :ensure t
-  :config
-  (setq lsp-auto-guess-root nil)
-  :hook (haskell-mode . lsp)
-  :commands lsp)
 
-(use-package lsp-ui
-  :ensure t
-  :commands lsp-ui-mode)
-(use-package lsp-haskell
-  :ensure t
+;; from https://blog.sumtypeofway.com/posts/emacs-config.html
+(use-package haskell-mode
+
   :config
- (setq lsp-haskell-server-path "haskell-language-server-wrapper")
- (setq lsp-haskell-server-args ())
-  ;; (setq lsp-haskell-server-path "~/.local/bin/haskell-language-server")
-  ;; Comment/uncomment this line to see interactions between lsp client/server.
-  (setq lsp-log-io t)
-  )
+  (defcustom haskell-formatter 'ormolu
+    "The Haskell formatter to use. One of: 'ormolu, 'stylish, nil. Set it per-project in .dir-locals."
+    :safe 'symbolp)
+
+  (defun haskell-smart-format ()
+    "Format a buffer based on the value of 'haskell-formatter'."
+    (interactive)
+    (cl-ecase haskell-formatter
+      ('ormolu (ormolu-format-buffer))
+      ('stylish (haskell-mode-stylish-buffer))
+      (nil nil)
+      ))
+
+  (defun haskell-switch-formatters ()
+    "Switch from ormolu to stylish-haskell, or vice versa."
+    (interactive)
+    (setq haskell-formatter
+          (cl-ecase haskell-formatter
+            ('ormolu 'stylish)
+            ('stylish 'ormolu)
+            (nil nil))))
+
+  ;; haskell-mode doesn't know about newer GHC features.
+  (let ((new-extensions '("QuantifiedConstraints"
+                          "DerivingVia"
+                          "BlockArguments"
+                          "DerivingStrategies"
+                          "StandaloneKindSignatures"
+                          )))
+    (setq
+     haskell-ghc-supported-extensions
+     (append haskell-ghc-supported-extensions new-extensions))))
+
+(use-package haskell-snippets
+  :after (haskell-mode yasnippet)
+  :defer)
+
+(require 'lsp)
+(require 'lsp-haskell)
+(add-hook 'haskell-mode-hook #'lsp-mode)
+(setq lsp-log-io 't)
+
 
 ;; optionally
 ;; (use-package lsp-ui :commands lsp-ui-mode)
@@ -382,8 +397,10 @@
 (use-package prop-menu
   :ensure t)
 
-(add-to-list 'load-path (concat (getenv "HOME") "/projects/idris/idris2-mode"))
-(require 'idris2-mode)
+(let ((idris2-mode-dir (concat (getenv "HOME") "/projects/idris/idris2-mode")))
+  (when (file-exists-p idris2-mode-dir)
+    (add-to-list 'load-path idris2-mode-dir)
+    (require 'idris2-mode)))
 
 ;; projectile
 (use-package projectile
@@ -508,310 +525,15 @@
 (add-hook 'sh-mode-hook 'flycheck-mode)
 
 ;; mu4e
-;; from https://www.reddit.com/r/emacs/comments/bfsck6/mu4e_for_dummies/
-(use-package org-mime
- :ensure t)
-
-(add-to-list 'load-path "/usr/local/share/emacs/site-lisp/mu/mu4e")
-(require 'mu4e)
-
-(setq mu4e-maildir (expand-file-name "~/Maildir"))
-
-; get mail
-(setq mu4e-get-mail-command "mbsync -c ~/.emacs.d/mu4e/.mbsyncrc -a"
-  ;; mu4e-html2text-command "w3m -T text/html" ;;using the default mu4e-shr2text
-  mu4e-view-prefer-html t
-  mu4e-update-interval 180
-  mu4e-headers-auto-update t
-  mu4e-compose-format-flowed t)
-
-;; to view selected message in the browser, no signin, just html mail
-(add-to-list 'mu4e-view-actions
-  '("ViewInBrowser" . mu4e-action-view-in-browser) t)
-
-;; enable inline images
-(setq mu4e-view-show-images t)
-;; use imagemagick, if available
-(when (fboundp 'imagemagick-register-types)
-  (imagemagick-register-types))
-
-;; every new email composition gets its own frame!
-(setq mu4e-compose-in-new-frame t)
-
-;; don't save message to Sent Messages, IMAP takes care of this
-(setq mu4e-sent-messages-behavior 'delete)
-
-(add-hook 'mu4e-view-mode-hook #'visual-line-mode)
-
-;; <tab> to navigate to links, <RET> to open them in browser
-(add-hook 'mu4e-view-mode-hook
-  (lambda()
-    ;; try to emulate some of the eww key-bindings
-    (local-set-key (kbd "<RET>") 'mu4e~view-browse-url-from-binding)
-    (local-set-key (kbd "<tab>") 'shr-next-link)
-    (local-set-key (kbd "<backtab>") 'shr-previous-link)))
-
-;; from https://www.reddit.com/r/emacs/comments/bfsck6/mu4e_for_dummies/elgoumx
-;; (add-hook 'mu4e-headers-mode-hook
-;;       (defun my/mu4e-change-headers ()
-;;         (interactive)
-;;         (setq mu4e-headers-fields
-;;               `((:human-date . 25) ;; alternatively, use :date
-;;                 (:flags . 6)
-;;                 (:from . 22)
-;;                 (:thread-subject . ,(- (window-body-width) 70)) ;; alternatively, use :subject
-;;                 (:size . 7)))))
-
-;; if you use date instead of human-date in the above, use this setting
-;; give me ISO(ish) format date-time stamps in the header list
-;(setq mu4e-headers-date-format "%Y-%m-%d %H:%M")
-
-;; spell check
-(add-hook 'mu4e-compose-mode-hook
-    (defun my-do-compose-stuff ()
-       "My settings for message composition."
-       (visual-line-mode)
-       (org-mu4e-compose-org-mode)
-           (use-hard-newlines -1)
-       (flyspell-mode)))
-
-(use-package smtpmail
- :ensure t)
-
-;;rename files when moving
-;;NEEDED FOR MBSYNC
-(setq mu4e-change-filenames-when-moving t)
-
-;;set up queue for offline email
-;;use mu mkdir  ~/Maildir/acc/queue to set up first
-(setq smtpmail-queue-mail nil)  ;; start in normal mode
-
-;;from the info manual
-(setq mu4e-attachment-dir  "~/Downloads")
-
-(setq message-kill-buffer-on-exit t)
-(setq mu4e-compose-dont-reply-to-self t)
-
-(require 'org-mu4e)
-
-;; convert org mode to HTML automatically
-(setq org-mu4e-convert-to-html t)
-(setq org-mu4e-link-query-in-headers-mode nil)
-(define-key mu4e-headers-mode-map (kbd "C-c c") 'mu4e-org-store-and-capture)
-(define-key mu4e-view-mode-map    (kbd "C-c c") 'mu4e-org-store-and-capture)
-
-;;from vxlabs config
-;; show full addresses in view message (instead of just names)
-;; toggle per name with M-RET
-(setq mu4e-view-show-addresses 't)
-
-;; don't ask when quitting
-(setq mu4e-confirm-quit nil)
-
-;; mu4e-context
-(setq mu4e-context-policy 'pick-first)
-(setq mu4e-compose-context-policy 'always-ask)
-(setq mu4e-sent-messages-behavior 'sent)
-(setq mu4e-contexts
-      (list
-       (make-mu4e-context
-        :name "work" ;;for palo-it-gmail
-        :enter-func (lambda () (mu4e-message "Entering context work"))
-        :leave-func (lambda () (mu4e-message "Leaving context work"))
-        :match-func (lambda (msg)
-                      (when msg
-                        (mu4e-message-contact-field-matches
-                         msg '(:from :to :cc :bcc) "abailly@palo-it.com")))
-        :vars '((user-mail-address . "abailly@palo-it.com")
-                (user-full-name . "Arnaud Bailly")
-                (mu4e-sent-folder . "/palo-it-gmail/[palo-it].Sent Mail")
-                (mu4e-drafts-folder . "/palo-it-gmail/[palo-it].drafts")
-                (mu4e-trash-folder . "/palo-it-gmail/[palo-it].Bin")
-                (mu4e-compose-signature . (concat "Arnaud Bailly\n"
-                                                  "Palo-IT Consultant Sénior\n"
-                                                  "M +33 (0)6 17 12 19 78\n"
-                                                  "1 rue Saint Julien, 44000 Nantes\n\n"
-                                                  "[Emacs 25, org-mode 9, mu4e 1.0]\n"))
-                (mu4e-compose-format-flowed . t)
-                (smtpmail-queue-dir . "~/Maildir/palo-it-gmail/queue/cur")
-                (message-send-mail-function . smtpmail-send-it)
-                (smtpmail-smtp-user . "abailly@palo-it.com")
-                (smtpmail-starttls-credentials . (("smtp.gmail.com" 587 nil nil)))
-                (smtpmail-auth-credentials . (expand-file-name "~/.authinfo.palo.gpg"))
-                (smtpmail-default-smtp-server . "smtp.gmail.com")
-                (smtpmail-smtp-server . "smtp.gmail.com")
-                (smtpmail-smtp-service . 587)
-                (smtpmail-debug-info . t)
-                (smtpmail-debug-verbose . t)
-                (mu4e-maildir-shortcuts . ( ("/palo-it-gmail/INBOX"            . ?i)
-                                            ))))
-       (make-mu4e-context
-        :name "Plus" ;;email plus
-        :enter-func (lambda () (mu4e-message "Entering context plus"))
-        :leave-func (lambda () (mu4e-message "Leaving context plus"))
-        :match-func (lambda (msg)
-                      (when msg
-                        (mu4e-message-contact-field-matches
-                         msg '(:from :to :cc :bcc) "arnaud@plusplatform.io")))
-        :vars '((user-mail-address . "arnaud@plusplatform.io")
-                (user-full-name . "Arnaud Bailly")
-                (mu4e-sent-folder . "/plus-gmail/[plus].Sent Mail")
-                (mu4e-drafts-folder . "/plus-gmail/[plus].drafts")
-                (mu4e-trash-folder . "/plus-gmail/[plus].Bin")
-                (mu4e-compose-signature . (concat "Arnaud Bailly\n"
-                                                  "Chief Architect\n"))
-                (mu4e-compose-format-flowed . t)
-                (smtpmail-queue-dir . "~/Maildir/plus-gmail/queue/cur")
-                (message-send-mail-function . smtpmail-send-it)
-                (smtpmail-smtp-user . "arnaud@plusplatform.io")
-                (smtpmail-starttls-credentials . (("smtp.gmail.com" 587 nil nil)))
-                (smtpmail-auth-credentials . (expand-file-name "~/.authinfo.plus.gpg"))
-                (smtpmail-default-smtp-server . "smtp.gmail.com")
-                (smtpmail-smtp-server . "smtp.gmail.com")
-                (smtpmail-smtp-service . 587)
-                (smtpmail-debug-info . t)
-                (smtpmail-debug-verbose . t)
-                (mu4e-maildir-shortcuts . ( ("/plus-gmail/INBOX"            . ?l)
-                                            ))))
-       (make-mu4e-context
-        :name "perso" ;;email perso
-        :enter-func (lambda () (mu4e-message "Entering context perso"))
-        :leave-func (lambda () (mu4e-message "Leaving context perso"))
-        :match-func (lambda (msg)
-                      (when msg
-                        (mu4e-message-contact-field-matches
-                         msg '(:from :to :cc :bcc) "arnaud.oqube@gmail.com")))
-        :vars '((user-mail-address . "arnaud.oqube@gmail.com")
-                (user-full-name . "Arnaud Bailly")
-                (mu4e-sent-folder . "/perso-gmail/[perso].Sent Mail")
-                (mu4e-drafts-folder . "/perso-gmail/[perso].drafts")
-                (mu4e-trash-folder . "/perso-gmail/[perso].Bin")
-                (mu4e-compose-signature . (concat "Arnaud Bailly\n"
-                                                  "[Emacs 25, org-mode 9, mu4e 1.0]\n"))
-                (mu4e-compose-format-flowed . t)
-                (smtpmail-queue-dir . "~/Maildir/perso-gmail/queue/cur")
-                (message-send-mail-function . smtpmail-send-it)
-                (smtpmail-smtp-user . "arnaud.oqube@gmail.com")
-                (smtpmail-starttls-credentials . (("smtp.gmail.com" 587 nil nil)))
-                (smtpmail-auth-credentials . (expand-file-name "~/.authinfo.gpg"))
-                (smtpmail-default-smtp-server . "smtp.gmail.com")
-                (smtpmail-smtp-server . "smtp.gmail.com")
-                (smtpmail-smtp-service . 587)
-                (smtpmail-debug-info . t)
-                (smtpmail-debug-verbose . t)
-                (mu4e-maildir-shortcuts . ( ("/perso-gmail/INBOX"            . ?p)
-                                            ))))
-       (make-mu4e-context
-        :name "solina"
-        :enter-func (lambda () (mu4e-message "Entering context solina"))
-        :leave-func (lambda () (mu4e-message "Leaving context solina"))
-        :match-func (lambda (msg)
-                      (when msg
-                        (or
-                         (mu4e-message-contact-field-matches
-                          msg '(:from :to :cc :bcc) "Arnaud.Bailly@solina-group.fr")
-                         (mu4e-message-contact-field-matches
-                          msg '(:from :to :cc :bcc) "Arnaud.BAILLY@solina-group.fr")
-                         (mu4e-message-contact-field-matches
-                          msg '(:from :to :cc :bcc) "arnaudb@solina-group.fr")
-                        )))
-        :vars '((user-mail-address . "Arnaud.Bailly@solina-group.fr")
-                (user-full-name . "Arnaud Bailly")
-                (mu4e-sent-folder . "/solina-gmail/[solina].Sent Mail")
-                (mu4e-drafts-folder . "/solina-gmail/[solina].drafts")
-                (mu4e-trash-folder . "/solina-gmail/[solina].Bin")
-                (mu4e-compose-signature . (concat "Arnaud Bailly\n"
-                                                  "Architect @ Project SWAP\n"
-                                                  "M +33 (0)6 17 12 19 78\n"
-                                                  "[Emacs 25, org-mode 9, mu4e 1.0]\n"))
-                (mu4e-compose-format-flowed . t)
-                (smtpmail-queue-dir . "~/Maildir/solina-gmail/queue/cur")
-                (message-send-mail-function . smtpmail-send-it)
-                (smtpmail-smtp-user . "arnaudb@solina-group.fr")
-                (smtpmail-stream-type . starttls)
-                (smtpmail-starttls-credentials . (("smtp.office365.com" 587 nil nil)))
-                (smtpmail-auth-credentials . (expand-file-name "~/.authinfo.gpg"))
-                (smtpmail-default-smtp-server . "smtp.office365.com")
-                (smtpmail-smtp-server . "smtp.office365.com")
-                (smtpmail-smtp-service . 587)
-                (smtpmail-debug-info . t)
-                (smtpmail-debug-verbose . t)
-                (mu4e-maildir-shortcuts . ( ("/solina-gmail/INBOX"            . ?s)
-                                            ))))
-       ))
-
-;; mu4e goodies
-;; https://github.com/panjie/mu4e-goodies
-(add-to-list 'load-path (concat (getenv "HOME") "/.emacs.d/mu4e-goodies"))
-(require 'mu4e-goodies)
-
-(defun my-contact-processor (contact)
-  (cond
-    ((string-match "paysdeloire.fr" contact)
-       (replace-regexp-in-string "paysdeloire.fr" "paysdelaloire.fr" contact))
-    (t contact)))
-
-(setq mu4e-contact-process-function 'my-contact-processor)
-
-;; (start-process-shell-command "test-mu4e" "test-mu4e"
-;;                             mu4e-get-mail-command)
-;; gpg
-;; from https://github.com/kensanata/ggg#mac
-;; (defun gpg-restart-agent ()
-;;   "This kills and restarts the gpg-agent.
-
-;; To kill gpg-agent, we use killall. If you know that the agent is
-;; OK, you should just reload the environment file using
-;; `gpg-reload-agent-info'."
-;;   (interactive)
-;;   (shell-command "killall gpg-agent")
-;;   (shell-command "gpg-agent --daemon --enable-ssh-support --write-env-file")
-;;   ;; read the environment file instead of parsing the output
-;;   (gpg-reload-agent-info))
-
-;; (defun gpg-reload-agent-info ()
-;;   "Reload the ~/.gpg-agent-info file."
-;;   (interactive)
-;;   (let ((file (expand-file-name "~/.gpg-agent-info")))
-;;     (when (file-readable-p file)
-;;       (with-temp-buffer
-;;         (insert-file-contents file)
-;;         (goto-char (point-min))
-;;         (while (re-search-forward "\\([A-Z_]+\\)=\\(.*\\)" nil t)
-;;           (setenv (match-string 1) (match-string 2)))))))
-
-;; (defun gpg-agent-startup ()
-;;   "Initialize the gpg-agent if necessary.
-
-;; Note that sometimes the gpg-agent can be up and running and still
-;; be useless, in which case you should restart it using
-;; `gpg-restart-agent'."
-;;   (gpg-reload-agent-info)
-;;   (let ((pid (getenv "SSH_AGENT_PID")))
-;;     (when (and (fboundp 'list-system-processes)
-;;                (or (not pid)
-;;                    (not (member (string-to-number pid)
-;;                                 (list-system-processes)))))
-;;       (gpg-restart-agent))))
-
-;; (gpg-agent-startup)
-
-(require 'go-mode)
-
-;; plantuml
-(setq plantuml-jar-path "/Users/arnaud/plantuml.jar")
-(setq plantuml-default-exec-mode 'jar)
-(add-to-list 'auto-mode-alist '("\\.plantuml\\'" . plantuml-mode))
-
-
-;; powerbuilder
-(load-file "/Users/arnaud/.emacs.d/powerbuilder-mode.el")
-(require 'powerbuilder-mode)
-(add-to-list 'auto-mode-alist '("\\.sr.*\\'" . powerbuilder-mode))
+(let ((mu4e-config (concat (getenv "HOME") ".mu4e.el")))
+  (when (file-exists-p mu4e-config)
+    (load-file mu4e-config)))
 
 ;; kill all cal-* buffers
 ;; inspired by https://www.emacswiki.org/emacs/KillingBuffers#toc3
 (defun kill-cal-buffers ()
+  "This function kills all opened buffers named 'cal-*'. This is useful
+when refreshing the calendars reaped out of gmail"
   (interactive)
   (mapc (lambda (buffer)
           (let ((buf (buffer-name buffer)))
@@ -821,11 +543,6 @@
         (buffer-list)))
 
 (global-set-key (kbd "C-x C-S-C") 'kill-cal-buffers)
-
-;; elegance, from https://github.com/rougier/elegant-emacs
-;; requires installing Roboto Mono and Fira Code fonts
-(save-place-mode 1)
-(load-file "/Users/arnaud/.emacs.d/elegance.el")
 
 ;; CRUX
 ;; https://github.com/bbatsov/crux
@@ -887,12 +604,10 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(custom-safe-themes
-   '("4bca89c1004e24981c840d3a32755bf859a6910c65b829d9441814000cf6c3d0" "e6ff132edb1bfa0645e2ba032c44ce94a3bd3c15e3929cdf6c049802cf059a2a" "99ea831ca79a916f1bd789de366b639d09811501e8c092c85b2cb7d697777f93" default))
+ '(lsp-haskell-server-path "haskell-language-server")
  '(package-selected-packages
-   '(powershell yaml-mode xref-js2 web-mode use-package tide terraform-mode srv rainbow-delimiters prop-menu projectile plantuml-mode outshine org-roam-server org-mime magit lsp-ui lsp-haskell literate-calc-mode js2-refactor js-doc intero helm graphviz-dot-mode go-mode go gnuplot-mode fsm folding fira-code-mode feature-mode expand-region ess elpy elm-mode elfeed eglot editorconfig dotnet doom-themes dockerfile-mode csharp-mode crux ag adoc-mode))
- '(safe-local-variable-values
-   '((intero-targets "hpaie:lib" "hpaie:exe:assign-keys" "hpaie:exe:gen-ledger" "hpaie:test:hpaie-test"))))
+   (quote
+    (direnv lsp nix-sandbox nix-mode yaml-mode xref-js2 web-mode use-package tide terraform-mode rainbow-delimiters prop-menu projectile outshine org-mime magit lsp-ui lsp-haskell literate-calc-mode js2-refactor intero helm google-translate expand-region elpy elm-mode elfeed editorconfig crux color-theme))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
