@@ -315,8 +315,10 @@
   :after (haskell-mode yasnippet)
   :defer)
 
-(require 'lsp)
-(require 'lsp-haskell)
+(use-package lsp
+  :ensure t)
+(use-package lsp-haskell
+  :ensure t)
 (add-hook 'haskell-mode-hook #'lsp-mode)
 (setq lsp-log-io 't)
 
