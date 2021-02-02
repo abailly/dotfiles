@@ -315,13 +315,18 @@
   :after (haskell-mode yasnippet)
   :defer)
 
-(use-package lsp
-  :ensure t)
+(use-package lsp-mode
+  :ensure t
+  ;; we need to defer running lsp because in case there's a direnv
+  ;; with use nix, it takes some time to load and lsp won't find the
+  ;; language server until the env is setup properly
+  :hook ((haskell-mode . lsp-deferred))
+  :commands (lsp lsp-deferred))
+
 (use-package lsp-haskell
   :ensure t)
-(add-hook 'haskell-mode-hook #'lsp-mode)
-(setq lsp-log-io 't)
 
+(setq lsp-log-io 't)
 
 ;; optionally
 ;; (use-package lsp-ui :commands lsp-ui-mode)

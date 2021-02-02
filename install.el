@@ -34,4 +34,5 @@
           elm-mode
           terraform-mode
           nix-mode
-          nix-sandbox))
+          nix-sandbox
+          lsp-ui))
