@@ -1,7 +1,7 @@
 [user]
 	name = Arnaud Bailly
-	email = arnaud.oqube@gmail.com
-	signkey = 7ED943C3
+	email = arnaud.bailly@iohk.io
+	signkey = 39AF57F
 [alias]
 	s = status
 	l = log --oneline --graph --decorate
@@ -10,10 +10,5 @@
 	sub = submodule
 [push]
 	default = simple
-[sendemail]
-  smtpencryption = tls
-  smtpserver = smtp.gmail.com
-  smtpuser = arnaud.oqube@gmail.com
-  smtpserverport = 587
 [core]
 	autocrlf = input

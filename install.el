@@ -13,7 +13,6 @@
             (package-install package)))
 
         '(magit
-          intero
           helm
           markdown-mode
           multiple-cursors
