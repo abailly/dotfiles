@@ -1,7 +1,7 @@
 [user]
 	name = Arnaud Bailly
 	email = arnaud.bailly@iohk.io
-	signkey = 39AF57F
+	signkey = 39AF57FB92B465F8AE6FD1BCCB4571C05D7B9E12
 [alias]
 	s = status
 	l = log --oneline --graph --decorate
@@ -12,3 +12,5 @@
 	default = simple
 [core]
 	autocrlf = input
+[commit]
+	gpgSign = true
