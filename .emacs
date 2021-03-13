@@ -392,6 +392,9 @@
 (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
 (projectile-mode +1)
 
+(use-package helm-projectile
+  :ensure t)
+
 ;; provides ag powered search for projectile, among other things
 (use-package ag
   :ensure t)
