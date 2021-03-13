@@ -276,6 +276,8 @@
 
 ;; from https://blog.sumtypeofway.com/posts/emacs-config.html
 (use-package haskell-mode
+  :init
+  (add-hook 'before-save-hook #'lsp-format-buffer)
 
   :config
   ;; haskell-mode doesn't know about newer GHC features.
