@@ -76,6 +76,8 @@
 (global-set-key (kbd "C-x M-p") "π")
 (global-set-key (kbd "C-x M-r") "ρ")
 (global-set-key (kbd "C-x C-g") "γ")
+(global-set-key (kbd "C-x C-n") "ν")
+(global-set-key (kbd "C-x M-x") "ξ")
 (global-set-key (kbd "C-x M-P") "Π")
 (global-set-key (kbd "C-x M-S") "Σ")
 (global-set-key (kbd "C-x M-i") (lambda ()
