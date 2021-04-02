@@ -17,8 +17,6 @@
             ;; font setting
            (set-frame-parameter (selected-frame) 'alpha '(100 100))
            (set-face-attribute 'default nil
-                               :background "white"
-                               :foreground "black"
                                :family "Hack"
                                :height 140)
 
@@ -43,15 +41,18 @@
 
   (defun my/map-key (key)
     "Map KEY from escape sequence \"\e[emacs-KEY\."
-    (define-key function-key-map (concat "\e[emacs-" key) (kbd key))))
+    (define-key function-key-map (concat "\e[emacs-" key) (kbd key)))
 
-(my/map-key "s-l")
-(my/map-key "C->")
-(my/map-key "C-<")
+  (my/map-key "s-l")
+  (my/map-key "C->")
+  (my/map-key "C-<")
+
+  )
 
 (when window-system
   ;; https://mblog.sumtypeofway.com/posts/emacs-config.html
   (use-package doom-themes
+    :ensure t
     :config
     (let ((chosen-theme 'doom-challenger-deep))
       (doom-themes-visual-bell-config)
@@ -276,7 +277,7 @@
 
 ;; from https://blog.sumtypeofway.com/posts/emacs-config.html
 (use-package haskell-mode
-
+  :ensure t
   :config
   (defcustom haskell-formatter 'ormolu
     "The Haskell formatter to use. One of: 'ormolu, 'stylish, nil. Set it per-project in .dir-locals."
@@ -615,10 +616,11 @@ when refreshing the calendars reaped out of gmail"
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   '("0a41da554c41c9169bdaba5745468608706c9046231bbbc0d155af1a12f32271" default))
  '(lsp-haskell-server-path "haskell-language-server")
  '(package-selected-packages
-   (quote
-    (ag direnv lsp nix-sandbox nix-mode yaml-mode xref-js2 web-mode use-package tide terraform-mode rainbow-delimiters prop-menu projectile outshine org-mime magit lsp-ui lsp-haskell literate-calc-mode js2-refactor intero helm google-translate expand-region elpy elm-mode elfeed editorconfig crux color-theme))))
+   '(ag direnv lsp nix-sandbox nix-mode yaml-mode xref-js2 web-mode use-package tide terraform-mode rainbow-delimiters prop-menu projectile outshine org-mime magit lsp-ui lsp-haskell literate-calc-mode js2-refactor intero helm google-translate expand-region elpy elm-mode elfeed editorconfig crux color-theme)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
