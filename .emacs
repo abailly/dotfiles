@@ -46,11 +46,13 @@
 
   (defun my/map-key (key)
     "Map KEY from escape sequence \"\e[emacs-KEY\."
-    (define-key function-key-map (concat "\e[emacs-" key) (kbd key))))
+    (define-key function-key-map (concat "\e[emacs-" key) (kbd key)))
 
-(my/map-key "s-l")
-(my/map-key "C->")
-(my/map-key "C-<")
+  (my/map-key "s-l")
+  (my/map-key "C->")
+  (my/map-key "C-<")
+
+  )
 
 (use-package modus-themes
   :ensure t
