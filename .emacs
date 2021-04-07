@@ -313,6 +313,9 @@
 
 (setq lsp-log-io 't)
 
+(use-package lsp-treemacs
+  :ensure t)
+
 ;; optionally
 ;; (use-package lsp-ui :commands lsp-ui-mode)
 
