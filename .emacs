@@ -17,8 +17,6 @@
             ;; font setting
            (set-frame-parameter (selected-frame) 'alpha '(100 100))
            (set-face-attribute 'default nil
-                               :background "white"
-                               :foreground "black"
                                :family "Hack"
                                :height 140)
 
