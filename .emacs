@@ -49,16 +49,10 @@
 (my/map-key "C->")
 (my/map-key "C-<")
 
-(when window-system
-  ;; https://mblog.sumtypeofway.com/posts/emacs-config.html
-  (use-package doom-themes
-    :config
-    (let ((chosen-theme 'doom-challenger-deep))
-      (doom-themes-visual-bell-config)
-      (doom-themes-org-config)
-      (setq doom-challenger-deep-brighter-comments t
-            doom-challenger-deep-brighter-modeline t)
-      (load-theme chosen-theme))))
+(use-package modus-themes
+  :ensure t
+  :config
+  (load-theme 'modus-vivendi))
 
 (require 'cl-lib)
 (cl-loop for char from ?a to ?z
@@ -601,10 +595,11 @@ when refreshing the calendars reaped out of gmail"
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   '("0f7fa4835d02a927d7d738a0d2d464c38be079913f9d4aba9c97f054e67b8db9" default))
  '(lsp-haskell-server-path "haskell-language-server")
  '(package-selected-packages
-   (quote
-    (helm-ag ag direnv lsp nix-sandbox nix-mode yaml-mode xref-js2 web-mode use-package tide terraform-mode rainbow-delimiters prop-menu projectile outshine org-mime magit lsp-ui lsp-haskell literate-calc-mode js2-refactor intero helm google-translate expand-region elpy elm-mode elfeed editorconfig crux color-theme))))
+   '(modus-themes monokai helm-ag ag direnv lsp nix-sandbox nix-mode yaml-mode xref-js2 web-mode use-package tide terraform-mode rainbow-delimiters prop-menu projectile outshine org-mime magit lsp-ui lsp-haskell literate-calc-mode js2-refactor intero helm google-translate expand-region elpy elm-mode elfeed editorconfig crux color-theme)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
