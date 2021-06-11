@@ -22,6 +22,11 @@
 
            ))
 
+(use-package unicode-fonts
+   :ensure t
+   :config
+   (unicode-fonts-setup))
+
 ;; from https://www.emacswiki.org/emacs/iTerm2
 (unless window-system
   (require 'mouse)
@@ -85,6 +90,9 @@
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
 (global-hl-line-mode 1)
 (global-set-key "\C-c\C-o" 'browse-url-at-point)
+
+
+(add-hook 'prog-mode-hook 'display-line-numbers-mode)
 
 (show-paren-mode)
 
@@ -594,10 +602,10 @@ when refreshing the calendars reaped out of gmail"
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
-   '("0f7fa4835d02a927d7d738a0d2d464c38be079913f9d4aba9c97f054e67b8db9" default))
+   '("076ee9f2c64746aac7994b697eb7dbde23ac22988d41ef31b714fc6478fee224" "0f7fa4835d02a927d7d738a0d2d464c38be079913f9d4aba9c97f054e67b8db9" default))
  '(lsp-haskell-server-path "haskell-language-server")
  '(package-selected-packages
-   '(modus-themes monokai helm-ag ag direnv lsp nix-sandbox nix-mode yaml-mode xref-js2 web-mode use-package tide terraform-mode rainbow-delimiters prop-menu projectile outshine org-mime magit lsp-ui lsp-haskell literate-calc-mode js2-refactor intero helm google-translate expand-region elpy elm-mode elfeed editorconfig crux color-theme)))
+   '(unicode-fonts modus-themes monokai helm-ag ag direnv lsp nix-sandbox nix-mode yaml-mode xref-js2 web-mode use-package tide terraform-mode rainbow-delimiters prop-menu projectile outshine org-mime magit lsp-ui lsp-haskell literate-calc-mode js2-refactor intero helm google-translate expand-region elpy elm-mode elfeed editorconfig crux color-theme)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
