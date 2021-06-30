@@ -421,6 +421,25 @@
 (use-package yaml-mode
   :ensure t)
 
+;; highlight-todo
+(use-package hl-todo
+  :ensure t
+  :config
+  (setq hl-todo-highlight-punctuation ":"
+        hl-todo-keyword-faces
+        `(("TODO"       warning bold)
+          ("FIXME"      error bold)
+          ("HACK"       font-lock-constant-face bold)
+          ("REVIEW"     font-lock-keyword-face bold)
+          ("NOTE"       success bold)
+          ("DEPRECATED" font-lock-doc-face bold))
+        (define-key hl-todo-mode-map (kbd "C-c p") 'hl-todo-previous)
+        (define-key hl-todo-mode-map (kbd "C-c n") 'hl-todo-next)
+        (define-key hl-todo-mode-map (kbd "C-c o") 'hl-todo-occur)
+        (define-key hl-todo-mode-map (kbd "C-c i") 'hl-todo-insert))
+  :hook ((prog-mode . hl-todo-mode)
+         (yaml-mode . hl-todo-mode)))
+  
 ;; javascript
 (require 'flycheck)
 (use-package js2-mode
@@ -605,7 +624,7 @@ when refreshing the calendars reaped out of gmail"
    '("076ee9f2c64746aac7994b697eb7dbde23ac22988d41ef31b714fc6478fee224" "0f7fa4835d02a927d7d738a0d2d464c38be079913f9d4aba9c97f054e67b8db9" default))
  '(lsp-haskell-server-path "haskell-language-server")
  '(package-selected-packages
-   '(unicode-fonts modus-themes monokai helm-ag ag direnv lsp nix-sandbox nix-mode yaml-mode xref-js2 web-mode use-package tide terraform-mode rainbow-delimiters prop-menu projectile outshine org-mime magit lsp-ui lsp-haskell literate-calc-mode js2-refactor intero helm google-translate expand-region elpy elm-mode elfeed editorconfig crux color-theme)))
+   '(hl-todo unicode-fonts modus-themes monokai helm-ag ag direnv lsp nix-sandbox nix-mode yaml-mode xref-js2 web-mode use-package tide terraform-mode rainbow-delimiters prop-menu projectile outshine org-mime magit lsp-ui lsp-haskell literate-calc-mode js2-refactor intero helm google-translate expand-region elpy elm-mode elfeed editorconfig crux color-theme)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
