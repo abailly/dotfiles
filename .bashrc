@@ -117,3 +117,5 @@ if ! shopt -oq posix; then
 fi
 
 eval "$(direnv hook bash)"
+
+export PATH=${HOME}/.local/bin:${PATH}

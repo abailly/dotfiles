@@ -432,11 +432,7 @@
           ("HACK"       font-lock-constant-face bold)
           ("REVIEW"     font-lock-keyword-face bold)
           ("NOTE"       success bold)
-          ("DEPRECATED" font-lock-doc-face bold))
-        (define-key hl-todo-mode-map (kbd "C-c p") 'hl-todo-previous)
-        (define-key hl-todo-mode-map (kbd "C-c n") 'hl-todo-next)
-        (define-key hl-todo-mode-map (kbd "C-c o") 'hl-todo-occur)
-        (define-key hl-todo-mode-map (kbd "C-c i") 'hl-todo-insert))
+          ("DEPRECATED" font-lock-doc-face bold)))
   :hook ((prog-mode . hl-todo-mode)
          (yaml-mode . hl-todo-mode)))
   
