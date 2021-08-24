@@ -9,7 +9,8 @@
 (package-initialize)
 
 (setq default-frame-alist
-      '((fullscreen . maximized) (fullscreen-restore . fullheight)))
+      '((fullscreen . maximized)
+        (fullscreen-restore . fullheight)))
 
 ;;; Code:
 (add-hook 'window-setup-hook
@@ -26,6 +27,19 @@
   :ensure t
   :config
   (unicode-fonts-setup))
+
+(set-face-attribute 'mode-line nil :height 120 :width 'normal)
+(set-face-attribute 'mode-line-inactive nil :height 120 :width 'normal)
+
+(use-package unicode-fonts
+   :ensure t
+   :config
+   (unicode-fonts-setup))
+
+(use-package modus-themes
+  :ensure t
+  :config
+  (load-theme 'modus-vivendi))
 
 ;; from https://www.emacswiki.org/emacs/iTerm2
 (unless window-system
@@ -72,8 +86,10 @@
 (global-set-key (kbd "C-x M-b") "β")
 (global-set-key (kbd "C-x M-d") "δ")
 (global-set-key (kbd "C-x M-l") "λ")
+(global-set-key (kbd "C-x M-n") "ν")
 (global-set-key (kbd "C-x M-p") "π")
 (global-set-key (kbd "C-x M-r") "ρ")
+(global-set-key (kbd "C-x M-t") "τ")
 (global-set-key (kbd "C-x C-g") "γ")
 (global-set-key (kbd "C-x C-n") "ν")
 (global-set-key (kbd "C-x M-x") "ξ")
@@ -254,6 +270,7 @@
 (setenv "PATH"
         (concat (getenv "HOME") "/.local/bin:"
                 (getenv "HOME") "/.cabal/bin:"
+                (getenv "HOME") "/.idris2/bin:"
                 (getenv "HOME") "/.ghcup/bin:"
                 "/usr/local/bin:"
                 (getenv "PATH")))
@@ -264,6 +281,7 @@
         (reverse exec-path)
         (list (concat (getenv "HOME") "/.local/bin")
               (concat (getenv "HOME") "/.cabal/bin")
+              (concat (getenv "HOME") "/.idris2/bin")
               (concat (getenv "HOME") "/.ghcup/bin")
               "/usr/local/bin" ))))
 
@@ -393,6 +411,15 @@
 (use-package markdown-mode
   :custom
   (markdown-command "pandoc -s --highlight-style pygments"))
+
+(defun my-set-margins ()
+  "Set margins in current buffer."
+  (setq left-margin-width 10)
+  (setq right-margin-width 10))
+
+(add-hook 'markdown-mode-hook 'my-set-margins)
+
+(add-hook 'markdown-mode-hook 'outline-minor-mode)
 
 (defun my-set-margins ()
   "Set margins in current buffer."
@@ -719,6 +746,18 @@ when refreshing the calendars reaped out of gmail"
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(browse-at-remote-remote-type-regexps
+   '(("^github\\.com$" . "github")
+     ("^bitbucket\\.org$" . "bitbucket")
+     ("^gitlab\\.com$" . "gitlab")
+     ("^git\\.savannah\\.gnu\\.org$" . "gnu")
+     ("^gist\\.github\\.com$" . "gist")
+     ("^git\\.sr\\.ht$" . "sourcehut")
+     ("^.*\\.visualstudio\\.com$" . "ado")
+     ("^pagure\\.io$" . "pagure")
+     ("^.*\\.fedoraproject\\.org$" . "pagure")
+     ("^.*\\.googlesource\\.com$" . "gitiles")
+     ("^.*.github\\.com$" . "github")))
  '(custom-safe-themes
    '("aa72e5b41780bfff2ff55d0cc6fcd4b42153386088a4025fed606c1099c2d9b8" "31f1723fb10ec4b4d2d79b65bcad0a19e03270fe290a3fc4b95886f18e79ac2f" "0568a5426239e65aab5e7c48fa1abde81130a87ddf7f942613bf5e13bf79686b" "076ee9f2c64746aac7994b697eb7dbde23ac22988d41ef31b714fc6478fee224" "0f7fa4835d02a927d7d738a0d2d464c38be079913f9d4aba9c97f054e67b8db9" default))
  '(lsp-haskell-server-path "haskell-language-server")
