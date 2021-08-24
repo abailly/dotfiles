@@ -9,7 +9,8 @@
 (package-initialize)
 
 (setq default-frame-alist
-      '((fullscreen . maximized) (fullscreen-restore . fullheight)))
+      '((fullscreen . maximized)
+        (fullscreen-restore . fullheight)))
 
 ;;; Code:
 (add-hook 'window-setup-hook
@@ -18,9 +19,22 @@
            (set-frame-parameter (selected-frame) 'alpha '(100 100))
            (set-face-attribute 'default nil
                                :family "Hack"
-                               :height 140)
+                               :height 160)
 
            ))
+
+(set-face-attribute 'mode-line nil :height 120 :width 'normal)
+(set-face-attribute 'mode-line-inactive nil :height 120 :width 'normal)
+
+(use-package unicode-fonts
+   :ensure t
+   :config
+   (unicode-fonts-setup))
+
+(use-package modus-themes
+  :ensure t
+  :config
+  (load-theme 'modus-vivendi))
 
 ;; from https://www.emacswiki.org/emacs/iTerm2
 (unless window-system
@@ -49,18 +63,6 @@
 
   )
 
-(when window-system
-  ;; https://mblog.sumtypeofway.com/posts/emacs-config.html
-  (use-package doom-themes
-    :ensure t
-    :config
-    (let ((chosen-theme 'doom-challenger-deep))
-      (doom-themes-visual-bell-config)
-      (doom-themes-org-config)
-      (setq doom-challenger-deep-brighter-comments t
-            doom-challenger-deep-brighter-modeline t)
-      (load-theme chosen-theme))))
-
 (require 'cl-lib)
 (cl-loop for char from ?a to ?z
          do (define-key input-decode-map (format "\e[1;P%c" char) (kbd (format "s-%c" char))))
@@ -74,8 +76,10 @@
 (global-set-key (kbd "C-x M-b") "β")
 (global-set-key (kbd "C-x M-d") "δ")
 (global-set-key (kbd "C-x M-l") "λ")
+(global-set-key (kbd "C-x M-n") "ν")
 (global-set-key (kbd "C-x M-p") "π")
 (global-set-key (kbd "C-x M-r") "ρ")
+(global-set-key (kbd "C-x M-t") "τ")
 (global-set-key (kbd "C-x C-g") "γ")
 (global-set-key (kbd "C-x M-P") "Π")
 (global-set-key (kbd "C-x M-S") "Σ")
@@ -94,11 +98,6 @@
 (global-set-key "\C-c\C-o" 'browse-url-at-point)
 
 (show-paren-mode)
-
-(use-package direnv
- :ensure t
- :config
- (direnv-mode))
 
 (use-package rainbow-delimiters
   :ensure t
@@ -251,6 +250,7 @@
 (setenv "PATH"
         (concat (getenv "HOME") "/.local/bin:"
                 (getenv "HOME") "/.cabal/bin:"
+                (getenv "HOME") "/.idris2/bin:"
                 (getenv "HOME") "/.ghcup/bin:"
                 "/usr/local/bin:"
                 (getenv "PATH")))
@@ -261,6 +261,7 @@
         (reverse exec-path)
         (list (concat (getenv "HOME") "/.local/bin")
               (concat (getenv "HOME") "/.cabal/bin")
+              (concat (getenv "HOME") "/.idris2/bin")
               (concat (getenv "HOME") "/.ghcup/bin")
               "/usr/local/bin" ))))
 
@@ -278,39 +279,7 @@
 ;; from https://blog.sumtypeofway.com/posts/emacs-config.html
 (use-package haskell-mode
   :ensure t
-  :config
-  (defcustom haskell-formatter 'ormolu
-    "The Haskell formatter to use. One of: 'ormolu, 'stylish, nil. Set it per-project in .dir-locals."
-    :safe 'symbolp)
-
-  (defun haskell-smart-format ()
-    "Format a buffer based on the value of 'haskell-formatter'."
-    (interactive)
-    (cl-ecase haskell-formatter
-      ('ormolu (ormolu-format-buffer))
-      ('stylish (haskell-mode-stylish-buffer))
-      (nil nil)
-      ))
-
-  (defun haskell-switch-formatters ()
-    "Switch from ormolu to stylish-haskell, or vice versa."
-    (interactive)
-    (setq haskell-formatter
-          (cl-ecase haskell-formatter
-            ('ormolu 'stylish)
-            ('stylish 'ormolu)
-            (nil nil))))
-
-  ;; haskell-mode doesn't know about newer GHC features.
-  (let ((new-extensions '("QuantifiedConstraints"
-                          "DerivingVia"
-                          "BlockArguments"
-                          "DerivingStrategies"
-                          "StandaloneKindSignatures"
-                          )))
-    (setq
-     haskell-ghc-supported-extensions
-     (append haskell-ghc-supported-extensions new-extensions))))
+  )
 
 (use-package haskell-snippets
   :after (haskell-mode yasnippet)
@@ -325,7 +294,10 @@
   :commands (lsp lsp-deferred))
 
 (use-package lsp-haskell
-  :ensure t)
+  :ensure t
+  :custom
+  (lsp-haskell-fourmolu-on 't)
+  (lsp-haskell-formatting-provider "fourmolu"))
 
 (setq lsp-log-io 't)
 
@@ -367,7 +339,8 @@
 ;; ormolu formatting
 ;; https://github.com/vyorkin/ormolu.el
 (use-package ormolu
-  :init (add-hook 'haskell-mode-hook 'interactive-haskell-mode)
+  :ensure t
+  :hook (haskell-mode . ormolu-format-on-save-mode)
   :bind (:map haskell-mode-map
               ("C-c r" . ormolu-format-buffer)))
 
@@ -393,6 +366,15 @@
 (require 'markdown-mode)
 (setq markdown-command "pandoc -s --highlight-style pygments")
 
+(defun my-set-margins ()
+  "Set margins in current buffer."
+  (setq left-margin-width 10)
+  (setq right-margin-width 10))
+
+(add-hook 'markdown-mode-hook 'my-set-margins)
+
+(add-hook 'markdown-mode-hook 'outline-minor-mode)
+
 ;; Python
 ;; requires (package-install 'elpy)
 ;; https://github.com/jorgenschaefer/elpy
@@ -416,6 +398,11 @@
 (define-key projectile-mode-map (kbd "s-p") 'projectile-command-map)
 (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
 (projectile-mode +1)
+
+(use-package helm-projectile
+  :ensure t)
+
+(helm-projectile-on)
 
 ;; provides ag powered search for projectile, among other things
 (use-package ag
@@ -611,16 +598,52 @@ when refreshing the calendars reaped out of gmail"
                                       "-- \\*+")
             (outline-minor-mode)))
   :ensure t)
+
+(use-package svelte-mode
+  :ensure t)
+
+(use-package emmet-mode
+  :ensure t)
+
+(use-package browse-at-remote
+   :ensure t
+   :bind
+   (("C-c M-o" . show-remote-get-url))
+   :custom
+   (browse-at-remote-prefer-symbolic t "Use commit hash for more permanent links."))
+
+(defun show-remote-get-url ()
+   "Print the output of browse-at-remote-get-url for current line."
+   (interactive)
+   (let ((url (browse-at-remote-kill)))
+     (message "Source code URL: %s" url)))
+
+(use-package git-timemachine
+   :ensure t
+   :bind
+   (("C-c M-m" . git-timemachine)))
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(browse-at-remote-remote-type-regexps
+   '(("^github\\.com$" . "github")
+     ("^bitbucket\\.org$" . "bitbucket")
+     ("^gitlab\\.com$" . "gitlab")
+     ("^git\\.savannah\\.gnu\\.org$" . "gnu")
+     ("^gist\\.github\\.com$" . "gist")
+     ("^git\\.sr\\.ht$" . "sourcehut")
+     ("^.*\\.visualstudio\\.com$" . "ado")
+     ("^pagure\\.io$" . "pagure")
+     ("^.*\\.fedoraproject\\.org$" . "pagure")
+     ("^.*\\.googlesource\\.com$" . "gitiles")
+     ("^.*.github\\.com$" . "github")))
  '(custom-safe-themes
-   '("0a41da554c41c9169bdaba5745468608706c9046231bbbc0d155af1a12f32271" default))
- '(lsp-haskell-server-path "haskell-language-server")
+   '("076ee9f2c64746aac7994b697eb7dbde23ac22988d41ef31b714fc6478fee224" "0a41da554c41c9169bdaba5745468608706c9046231bbbc0d155af1a12f32271" default))
  '(package-selected-packages
-   '(ag direnv lsp nix-sandbox nix-mode yaml-mode xref-js2 web-mode use-package tide terraform-mode rainbow-delimiters prop-menu projectile outshine org-mime magit lsp-ui lsp-haskell literate-calc-mode js2-refactor intero helm google-translate expand-region elpy elm-mode elfeed editorconfig crux color-theme)))
+   '(git-timemachine browse-at-remote svelte-mode emmet-mode ormolu modus-themes unicode-fonts helm-ag helm-projectile ag direnv lsp nix-sandbox nix-mode yaml-mode xref-js2 web-mode use-package tide terraform-mode rainbow-delimiters prop-menu projectile outshine org-mime magit lsp-ui lsp-haskell literate-calc-mode js2-refactor intero helm google-translate expand-region elpy elm-mode elfeed editorconfig crux color-theme)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
