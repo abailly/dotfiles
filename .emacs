@@ -276,10 +276,20 @@
 (use-package yasnippet
   :ensure t)
 
+(defun lsp-format-buffer-for-haskell ()
+  (when (eq major-mode 'haskell-mode)
+    (lsp-format-buffer)))
+
+(defun format-cabal-buffer ()
+  (when (eq major-mode 'haskell-cabal-mode)
+    (haskell-mode-buffer-apply-command "cabal-fmt")))
+
+
 ;; from https://blog.sumtypeofway.com/posts/emacs-config.html
 (use-package haskell-mode
   :init
-  (add-hook 'before-save-hook #'lsp-format-buffer)
+  (add-hook 'before-save-hook #'lsp-format-buffer-for-haskell)
+  (add-hook 'before-save-hook #'format-cabal-buffer)
 
   :config
   ;; haskell-mode doesn't know about newer GHC features.
@@ -435,7 +445,7 @@
           ("DEPRECATED" font-lock-doc-face bold)))
   :hook ((prog-mode . hl-todo-mode)
          (yaml-mode . hl-todo-mode)))
-  
+
 ;; javascript
 (require 'flycheck)
 (use-package js2-mode
@@ -614,8 +624,22 @@ when refreshing the calendars reaped out of gmail"
 
 (use-package browse-at-remote
   :ensure t
+  :bind
+  (("C-c M-o" . show-remote-get-url))
   :custom
   (browse-at-remote-prefer-symbolic t "Use commit hash for more permanent links."))
+
+(defun show-remote-get-url ()
+  "Print the output of browse-at-remote-get-url for current line."
+  (interactive)
+  (let ((url (browse-at-remote-kill)))
+    (message "Source code URL: %s" url)))
+
+
+(use-package git-timemachine
+  :ensure t
+  :bind
+  (("C-c M-m" . git-timemachine)))
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -626,7 +650,7 @@ when refreshing the calendars reaped out of gmail"
    '("0568a5426239e65aab5e7c48fa1abde81130a87ddf7f942613bf5e13bf79686b" "076ee9f2c64746aac7994b697eb7dbde23ac22988d41ef31b714fc6478fee224" "0f7fa4835d02a927d7d738a0d2d464c38be079913f9d4aba9c97f054e67b8db9" default))
  '(lsp-haskell-server-path "haskell-language-server")
  '(package-selected-packages
-   '(browse-at-remote hl-todo unicode-fonts modus-themes monokai helm-ag ag direnv lsp nix-sandbox nix-mode yaml-mode xref-js2 web-mode use-package tide terraform-mode rainbow-delimiters prop-menu projectile outshine org-mime magit lsp-ui lsp-haskell literate-calc-mode js2-refactor intero helm google-translate expand-region elpy elm-mode elfeed editorconfig crux color-theme)))
+   '(vline hl-fill-column haskell-cabal-mode git-timemachine browse-at-remote hl-todo unicode-fonts modus-themes monokai helm-ag ag direnv lsp nix-sandbox nix-mode yaml-mode xref-js2 web-mode use-package tide terraform-mode rainbow-delimiters prop-menu projectile outshine org-mime magit lsp-ui lsp-haskell literate-calc-mode js2-refactor intero helm google-translate expand-region elpy elm-mode elfeed editorconfig crux color-theme)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
