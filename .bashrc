@@ -119,3 +119,7 @@ fi
 eval "$(direnv hook bash)"
 
 export PATH=${HOME}/.local/bin:${PATH}
+. "$HOME/.cargo/env"
+
+# Git completion
+[ -f ~/.git-completion.sh ] && source ~/.git-completion.sh
