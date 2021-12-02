@@ -284,6 +284,10 @@
   (when (eq major-mode 'haskell-cabal-mode)
     (haskell-mode-buffer-apply-command "cabal-fmt")))
 
+(use-package helm-lsp
+  :ensure t)
+
+(define-key lsp-mode-map [remap xref-find-apropos] #'helm-lsp-workspace-symbol)
 
 ;; from https://blog.sumtypeofway.com/posts/emacs-config.html
 (use-package haskell-mode
@@ -313,6 +317,7 @@
   ;; with use nix, it takes some time to load and lsp won't find the
   ;; language server until the env is setup properly
   :hook ((haskell-mode . lsp-deferred))
+  :custom  (lsp-lens-enable nil)
   :commands (lsp lsp-deferred))
 
 (use-package lsp-haskell
@@ -327,7 +332,9 @@
   :ensure t)
 
 ;; optionally
-;; (use-package lsp-ui :commands lsp-ui-mode)
+(use-package lsp-ui
+  :ensure t
+  :commands lsp-ui-mode)
 
 ;; seems like for some reason the function cannot be foudn at startup
 (defun string-join (sl delim)
@@ -380,8 +387,9 @@
 (global-set-key (kbd "C-x M-g") 'magit-dispatch-popup)
 
 ;; markdown
-(require 'markdown-mode)
-(setq markdown-command "pandoc -s --highlight-style pygments")
+(use-package markdown-mode
+  :custom
+  (markdown-command "pandoc -s --highlight-style pygments"))
 
 ;; Python
 ;; requires (package-install 'elpy)
