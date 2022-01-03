@@ -391,6 +391,15 @@
   :custom
   (markdown-command "pandoc -s --highlight-style pygments"))
 
+(defun my-set-margins ()
+  "Set margins in current buffer."
+  (setq left-margin-width 10)
+  (setq right-margin-width 10))
+
+(add-hook 'markdown-mode-hook 'my-set-margins)
+
+(add-hook 'markdown-mode-hook 'outline-minor-mode)
+
 ;; Python
 ;; requires (package-install 'elpy)
 ;; https://github.com/jorgenschaefer/elpy
