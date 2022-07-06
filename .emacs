@@ -55,7 +55,7 @@
 (use-package modus-themes
   :ensure t
   :config
-  (load-theme 'modus-vivendi))
+  (load-theme 'modus-operandi))
 
 (require 'cl-lib)
 (cl-loop for char from ?a to ?z
@@ -291,6 +291,7 @@
 
 ;; from https://blog.sumtypeofway.com/posts/emacs-config.html
 (use-package haskell-mode
+  :ensure t
   :init
   (add-hook 'before-save-hook #'lsp-format-buffer-for-haskell)
   (add-hook 'before-save-hook #'format-cabal-buffer)
@@ -692,3 +693,27 @@ when refreshing the calendars reaped out of gmail"
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  )
+
+(use-package sensei
+  :ensure t
+  :bind
+  (("C-x r n" . sensei-record-note))
+  (("C-x r f" . sensei-record-flow)))
+
+;; highlight-todo
+(use-package hl-todo
+  :ensure t
+  :config
+  (setq hl-todo-highlight-punctuation ":"
+        hl-todo-keyword-faces
+        `(("TODO"       warning bold)
+          ("FIXME"      error bold)
+          ("HACK"       font-lock-constant-face bold)
+          ("REVIEW"     font-lock-keyword-face bold)
+          ("NOTE"       success bold)
+          ("DEPRECATED" font-lock-doc-face bold)))
+  :hook ((prog-mode . hl-todo-mode)
+         (yaml-mode . hl-todo-mode)))
+
+(provide '.emacs)
+;;; .emacs ends here
