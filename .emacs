@@ -111,10 +111,8 @@
 
 ;; helm
 ;; from http://tuhdo.github.io/helm-intro.html
-(use-package helm	
-   :ensure t)
-(use-package helm-config
-   :ensure t)
+(use-package helm
+  :ensure t)
 
 ;; The default "C-x c" is quite close to "C-x C-c", which quits Emacs.
 ;; Changed to "C-c h". Note: We must set "C-c h" globally, because we
@@ -320,7 +318,7 @@
   ;; with use nix, it takes some time to load and lsp won't find the
   ;; language server until the env is setup properly
   :hook ((haskell-mode . lsp-deferred) (typescript-mode . lsp))
-  :custom  (lsp-lens-enable nil)
+  :custom  (lsp-lens-enable 't)
   :commands (lsp lsp-deferred))
 
 (use-package lsp-haskell
