@@ -753,5 +753,9 @@ when refreshing the calendars reaped out of gmail"
   :hook ((prog-mode . hl-todo-mode)
          (yaml-mode . hl-todo-mode)))
 
+;; sbcl
+(load (expand-file-name "~/.quicklisp/slime-helper.el"))
+(setq inferior-lisp-program "sbcl")
+
 (provide '.emacs)
 ;;; .emacs ends here
