@@ -755,7 +755,12 @@ when refreshing the calendars reaped out of gmail"
 
 ;; sbcl
 (load (expand-file-name "~/.quicklisp/slime-helper.el"))
-(setq inferior-lisp-program "sbcl")
+
+;; common lisp
+(use-package slime
+  :ensure t
+  :config
+  (setq inferior-lisp-program "sbcl"))
 
 (provide '.emacs)
 ;;; .emacs ends here
