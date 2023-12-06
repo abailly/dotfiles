@@ -35,5 +35,3 @@
           nix-mode
           nix-sandbox
           lsp-ui))
-
-(ql:quickload :quicklisp-slime-helper)
