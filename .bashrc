@@ -123,3 +123,5 @@ export PATH=${HOME}/.local/bin:${PATH}
 
 # Git completion
 [ -f ~/.git-completion.sh ] && source ~/.git-completion.sh
+
+[ -f "/home/curry/.ghcup/env" ] && source "/home/curry/.ghcup/env" # ghcup-env

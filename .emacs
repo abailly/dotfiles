@@ -13,19 +13,19 @@
 
 ;;; Code:
 (add-hook 'window-setup-hook
-         (lambda nil
+          (lambda nil
             ;; font setting
-           (set-frame-parameter (selected-frame) 'alpha '(100 100))
-           (set-face-attribute 'default nil
-                               :family "Hack"
-                               :height 140)
+            (set-frame-parameter (selected-frame) 'alpha '(100 100))
+            (set-face-attribute 'default nil
+                                :family "Hack"
+                                :height 140)
 
-           ))
+            ))
 
 (use-package unicode-fonts
-   :ensure t
-   :config
-   (unicode-fonts-setup))
+  :ensure t
+  :config
+  (unicode-fonts-setup))
 
 ;; from https://www.emacswiki.org/emacs/iTerm2
 (unless window-system
@@ -97,9 +97,9 @@
 (show-paren-mode)
 
 (use-package direnv
- :ensure t
- :config
- (direnv-mode))
+  :ensure t
+  :config
+  (direnv-mode))
 
 (use-package rainbow-delimiters
   :ensure t
@@ -177,8 +177,8 @@
          "* %c\n%i" :immediate-finish t)
         ("w" "Handle email@work" entry (file+datetree "~/log/palo-it.org")
          "**** TODO %a %?\nDEADLINE: %(org-insert-time-stamp (org-read-date nil t \"+2d\"))")
-;;        ("w" "Handle email@home" entry (file+datetree "~/log/journal.org")
-;;         "**** TODO %a %?\nDEADLINE: %(org-insert-time-stamp (org-read-date nil t \"+2d\"))")
+        ;;        ("w" "Handle email@home" entry (file+datetree "~/log/journal.org")
+        ;;         "**** TODO %a %?\nDEADLINE: %(org-insert-time-stamp (org-read-date nil t \"+2d\"))")
         ("L" "Capture link" entry (file+datetree "~/log/journal.org")
          "* %? [[%:link][%:description]] \nCaptured On: %U" :immediate-finish t)))
 
@@ -241,10 +241,10 @@
 
 ;; activate smerge when opening conflict files
 (defun sm-try-smerge ()
-     (save-excursion
-       (goto-char (point-min))
-       (when (re-search-forward "^<<<<<<< " nil t)
-   	   (smerge-mode 1))))
+  (save-excursion
+    (goto-char (point-min))
+    (when (re-search-forward "^<<<<<<< " nil t)
+   	  (smerge-mode 1))))
 
 (add-hook 'find-file-hook 'sm-try-smerge t)
 
@@ -592,11 +592,11 @@
 
 ;; elm
 (use-package elm-mode
- :ensure t)
+  :ensure t)
 
 ;; terraform
 (use-package terraform-mode
- :ensure t)
+  :ensure t)
 
 ;; shellcheck
 ;;http://www.skybert.net/emacs/bash-linting-in-emacs/
@@ -672,10 +672,10 @@ when refreshing the calendars reaped out of gmail"
 
 (use-package outshine
   :init (add-hook 'haskell-mode-hook
-          (lambda ()
-            (set (make-local-variable 'outline-regexp)
-                                      "-- \\*+")
-            (outline-minor-mode)))
+                  (lambda ()
+                    (set (make-local-variable 'outline-regexp)
+                         "-- \\*+")
+                    (outline-minor-mode)))
   :ensure t)
 
 (use-package browse-at-remote
@@ -753,14 +753,15 @@ when refreshing the calendars reaped out of gmail"
   :hook ((prog-mode . hl-todo-mode)
          (yaml-mode . hl-todo-mode)))
 
-;; sbcl
-(load (expand-file-name "~/.quicklisp/slime-helper.el"))
-
 ;; common lisp
 (use-package slime
   :ensure t
   :config
   (setq inferior-lisp-program "sbcl"))
+
+;; sbcl
+(load (expand-file-name "~/.quicklisp/slime-helper.el"))
+
 
 (provide '.emacs)
 ;;; .emacs ends here
