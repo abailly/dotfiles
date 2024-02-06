@@ -12,19 +12,45 @@
       '((fullscreen . maximized)
         (fullscreen-restore . fullheight)))
 
+;; from https://github.com/emacs-lsp/lsp-mode/issues/4054
+(add-to-list 'image-types 'svg)
+
 ;;; Code:
 (add-hook 'window-setup-hook
          (lambda nil
             ;; font setting
            (set-frame-parameter (selected-frame) 'alpha '(100 100))
            (set-face-attribute 'default nil
-                               :family "Hack"
-                               :height 160)
+                               :family "mononoki"
+                               :height 140)
 
-           ))
+))
+
+(use-package ligature
+  :ensure t
+  :config
+  ;; Enable the www ligature in every possible major mode
+  (ligature-set-ligatures 't '("www"))
+
+  ;; Enable ligatures in programming modes
+  (ligature-set-ligatures 'prog-mode
+                          '("www" "**" "***" "**/" "*>" "*/" "\\\\" "\\\\\\" "{-" "::"
+                            ":::" ":=" "!!" "!=" "!==" "-}" "----" "-->" "->" "->>"
+                            "-<" "-<<" "-~" "#{" "#[" "##" "###" "####" "#(" "#?" "#_"
+                            "#_(" ".-" ".=" ".." "..<" "..." "?=" "??" ";;" "/*" "/**"
+                            "/=" "/==" "/>" "//" "///" "&&" "||" "||=" "|=" "|>" "^=" "$>"
+                            "++" "+++" "+>" "=:=" "==" "===" "==>" "=>" "=>>" "<="
+                            "=<<" "=/=" ">-" ">=" ">=>" ">>" ">>-" ">>=" ">>>" "<*"
+                            "<*>" "<|" "<|>" "<$" "<$>" "<!--" "<-" "<--" "<->" "<+"
+                            "<+>" "<=" "<==" "<=>" "<=<" "<>" "<<" "<<-" "<<=" "<<<"
+                            "<~" "<~~" "</" "</>" "~@" "~-" "~>" "~~" "~~>" "%%"))
+
+  (global-ligature-mode 't)
+  )
 
 (set-face-attribute 'mode-line nil :height 120 :width 'normal)
 (set-face-attribute 'mode-line-inactive nil :height 120 :width 'normal)
+
 
 (use-package unicode-fonts
    :ensure t
@@ -75,6 +101,7 @@
 (global-set-key (kbd "C-x M-a") "α")
 (global-set-key (kbd "C-x M-b") "β")
 (global-set-key (kbd "C-x M-d") "δ")
+(global-set-key (kbd "C-x M-D") "Δ")
 (global-set-key (kbd "C-x M-l") "λ")
 (global-set-key (kbd "C-x M-n") "ν")
 (global-set-key (kbd "C-x M-p") "π")
@@ -86,6 +113,7 @@
 (global-set-key (kbd "C-x C-g") "γ")
 (global-set-key (kbd "C-x M-P") "Π")
 (global-set-key (kbd "C-x M-S") "Σ")
+(global-set-key (kbd "C-x M-s") "σ")
 (global-set-key (kbd "C-x M-i") (lambda ()
                                   (interactive)
                                   (insert "·")))
@@ -113,7 +141,6 @@
 ;; helm
 ;; from http://tuhdo.github.io/helm-intro.html
 (require 'helm)
-(require 'helm-config)
 
 ;; The default "C-x c" is quite close to "C-x C-c", which quits Emacs.
 ;; Changed to "C-c h". Note: We must set "C-c h" globally, because we
@@ -131,7 +158,7 @@
 (when (executable-find "curl")
   (setq helm-google-suggest-use-curl-p t))
 
-(setq helm-split-window-in-side-p           t ; open helm buffer inside current window, not occupy whole other window
+(setq helm-split-window-inside-p           t ; open helm buffer inside current window, not occupy whole other window
       helm-move-to-line-cycle-in-source     t ; move to end or beginning of source when reaching top or bottom of source.
       helm-ff-search-library-in-sexp        t ; search for library in `require' and `declare-function' sexp.
       helm-scroll-amount                    8 ; scroll 8 lines other window using M-<next>/M-<prior>
@@ -266,6 +293,7 @@
               (concat (getenv "HOME") "/.cabal/bin")
               (concat (getenv "HOME") "/.idris2/bin")
               (concat (getenv "HOME") "/.ghcup/bin")
+              (concat (getenv "HOME") "/.opam/default/bin")
               "/usr/local/bin" ))))
 
 (use-package nix-sandbox)
@@ -282,6 +310,7 @@
 ;; from https://blog.sumtypeofway.com/posts/emacs-config.html
 (use-package haskell-mode
   :ensure t
+  :hook ((haskell-mode . display-line-numbers-mode))
   )
 
 (use-package haskell-snippets
@@ -293,13 +322,19 @@
   ;; we need to defer running lsp because in case there's a direnv
   ;; with use nix, it takes some time to load and lsp won't find the
   ;; language server until the env is setup properly
-  :hook ((haskell-mode . lsp-deferred))
-  :commands (lsp lsp-deferred))
+  :hook
+  ((haskell-mode . lsp-deferred)
+   (rust-mode . lsp))
+  :commands (lsp lsp-deferred)
+  :custom
+  (lsp-modeline-diagnostics-scope :workspace))
+
+(use-package lsp-treemacs
+  :ensure t)
 
 (use-package lsp-haskell
   :ensure t
   :custom
-  (lsp-haskell-fourmolu-on 't)
   (lsp-haskell-formatting-provider "fourmolu"))
 
 (setq lsp-log-io 't)
@@ -602,23 +637,19 @@ when refreshing the calendars reaped out of gmail"
             (outline-minor-mode)))
   :ensure t)
 
-(use-package svelte-mode
-  :ensure t)
-
 (use-package emmet-mode
   :ensure t)
 
 (use-package browse-at-remote
    :ensure t
    :bind
-   (("C-c M-o" . show-remote-get-url))
-   :custom
-   (browse-at-remote-prefer-symbolic t "Use commit hash for more permanent links."))
+   (("C-c M-o" . 'show-remote-get-url)))
 
 (defun show-remote-get-url ()
    "Print the output of browse-at-remote-get-url for current line."
    (interactive)
-   (let ((url (browse-at-remote-kill)))
+   (let ((url (browse-at-remote-get-url)))
+     (kill-new url)
      (message "Source code URL: %s" url)))
 
 (use-package git-timemachine
@@ -631,25 +662,163 @@ when refreshing the calendars reaped out of gmail"
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(browse-at-remote-prefer-symbolic nil)
  '(browse-at-remote-remote-type-regexps
-   '(("^github\\.com$" . "github")
-     ("^bitbucket\\.org$" . "bitbucket")
-     ("^gitlab\\.com$" . "gitlab")
-     ("^git\\.savannah\\.gnu\\.org$" . "gnu")
-     ("^gist\\.github\\.com$" . "gist")
-     ("^git\\.sr\\.ht$" . "sourcehut")
-     ("^.*\\.visualstudio\\.com$" . "ado")
-     ("^pagure\\.io$" . "pagure")
-     ("^.*\\.fedoraproject\\.org$" . "pagure")
-     ("^.*\\.googlesource\\.com$" . "gitiles")
-     ("^.*.github\\.com$" . "github")))
+   '((:host "^github\\.com$" :type "github")
+     (:host "^bitbucket\\.org$" :type "bitbucket")
+     (:host "^gitlab\\.com$" :type "gitlab")
+     (:host "^git\\.savannah\\.gnu\\.org$" :type "gnu")
+     (:host "^gist\\.github\\.com$" :type "gist")
+     (:host "^git\\.sr\\.ht$" :type "sourcehut")
+     (:host "^.*\\.visualstudio\\.com$" :type "ado")
+     (:host "^pagure\\.io$" :type "pagure")
+     (:host "^.*\\.fedoraproject\\.org$" :type "pagure")
+     (:host "^.*\\.googlesource\\.com$" :type "gitiles")
+     (:host "^mac-mini$" :type "github")
+     (:host "^gitlab\\.gnome\\.org$" :type "gitlab")))
  '(custom-safe-themes
-   '("076ee9f2c64746aac7994b697eb7dbde23ac22988d41ef31b714fc6478fee224" "0a41da554c41c9169bdaba5745468608706c9046231bbbc0d155af1a12f32271" default))
+   '("8746b94181ba961ebd07c7397339d6a7160ee29c75ca1734aa3744274cbe0370" "5fdc0f5fea841aff2ef6a75e3af0ce4b84389f42e57a93edc3320ac15337dc10" "076ee9f2c64746aac7994b697eb7dbde23ac22988d41ef31b714fc6478fee224" "0a41da554c41c9169bdaba5745468608706c9046231bbbc0d155af1a12f32271" default))
+ '(grep-find-ignored-directories
+   '("SCCS" "RCS" "CVS" "MCVS" ".src" ".svn" ".git" ".hg" ".bzr" "_MTN" "_darcs" "{arch}" "node_modules" "docs/build"))
+ '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
  '(package-selected-packages
-   '(git-timemachine browse-at-remote svelte-mode emmet-mode ormolu modus-themes unicode-fonts helm-ag helm-projectile ag direnv lsp nix-sandbox nix-mode yaml-mode xref-js2 web-mode use-package tide terraform-mode rainbow-delimiters prop-menu projectile outshine org-mime magit lsp-ui lsp-haskell literate-calc-mode js2-refactor intero helm google-translate expand-region elpy elm-mode elfeed editorconfig crux color-theme)))
+   '(format-all proof-general graphviz-dot-mode rust-mode slime lsp-treemacs elpher ligature magit-todos hl-todo ansible ocamlformat flycheck-ocaml merlin-eldoc merlin dune tuareg janet-mode dockerfile-mode zig-mode plantuml-mode gnuplot-mode sensei helm-rg git-timemachine browse-at-remote svelte-mode emmet-mode ormolu modus-themes unicode-fonts helm-ag helm-projectile ag direnv lsp nix-sandbox nix-mode yaml-mode xref-js2 web-mode use-package tide terraform-mode rainbow-delimiters prop-menu projectile outshine org-mime magit lsp-ui literate-calc-mode js2-refactor intero helm google-translate expand-region elpy elm-mode elfeed editorconfig crux color-theme))
+ '(safe-local-variable-values
+   '((TeX-master . "main")
+     (eval highlight-regexp "^ +")
+     (lsp-haskell-server-path . "haskell-language-server-wrapper"))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  )
+
+(use-package sensei
+  :ensure t
+  :bind
+  (("C-x r n" . sensei-record-note))
+  (("C-x r f" . sensei-record-flow)))
+
+;; https://gist.github.com/kristianhellquist/3082383
+(defun copy-current-line-position-to-clipboard ()
+  "Copy current line in file to clipboard as '</path/to/file>:<line-number>'"
+  (interactive)
+  (let ((path-with-line-number
+         (concat (buffer-file-name) ":" (number-to-string (line-number-at-pos)))))
+    (x-select-text path-with-line-number)
+    (message (concat path-with-line-number " copied to clipboard"))))
+
+(define-key global-map (kbd "M-l") 'copy-current-line-position-to-clipboard)
+
+;; Major mode for OCaml programming
+(use-package tuareg
+  :ensure t
+  :mode (("\\.ocamlinit\\'" . tuareg-mode)))
+
+;; Major mode for editing Dune project files
+(use-package dune
+  :ensure t)
+
+;; Merlin provides advanced IDE features
+(use-package merlin
+  :ensure t
+  :config
+  (add-hook 'tuareg-mode-hook #'merlin-mode)
+  (add-hook 'merlin-mode-hook #'company-mode)
+  ;; we're using flycheck instead
+  (setq merlin-error-after-save nil))
+
+(use-package merlin-eldoc
+  :ensure t
+  :hook ((tuareg-mode) . merlin-eldoc-setup))
+
+;; This uses Merlin internally
+(use-package flycheck-ocaml
+  :ensure t
+  :config
+  (flycheck-ocaml-setup))
+
+(use-package direnv
+  :ensure t
+  :config
+  (direnv-mode))
+
+(use-package ocamlformat
+  :ensure t
+  :custom (ocamlformat-enable 'enable-outside-detected-project)
+  :hook (before-save . ocamlformat-before-save)
+  )
+
+(add-to-list 'load-path "/Users/arnaud/.opam/default/share/emacs/site-lisp")
+(require 'ocp-indent)
+
+(use-package zig-mode
+  :ensure t)
+
+(setq lsp-zig-zls-executable (concat (getenv "HOME") "/.local/bin/zls"))
+
+;; highlight-todo
+(use-package hl-todo
+  :ensure t
+  :config
+  (setq hl-todo-highlight-punctuation ":"
+        hl-todo-keyword-faces
+        `(("TODO"       warning bold)
+          ("FIXME"      error bold)
+          ("HACK"       font-lock-constant-face bold)
+          ("REVIEW"     font-lock-keyword-face bold)
+          ("NOTE"       success bold)
+          ("DEPRECATED" font-lock-doc-face bold)))
+  :hook ((prog-mode . hl-todo-mode)
+         (yaml-mode . hl-todo-mode)))
+
+(use-package magit-todos
+  :ensure t
+  :config
+  (setq magit-todos-exclude-globs '("node_modules/*")))
+
+;; workaround the annoying open file limit baked in low-level library
+;; https://www.blogbyben.com/2022/05/gotcha-emacs-on-mac-os-too-many-files.html
+(defun file-notify-rm-all-watches ()
+  "Remove all existing file notification watches from Emacs."
+  (interactive)
+  (maphash
+   (lambda (key _value)
+     (file-notify-rm-watch key))
+   file-notify-descriptors))
+
+(load-file (let ((coding-system-for-read 'utf-8))
+                (shell-command-to-string "agda-mode locate")))
+
+(load (expand-file-name "~/quicklisp/slime-helper.el"))
+
+;; common lisp
+(use-package slime
+  :ensure t
+  :config
+  (setq slime-lisp-implementations
+      '((sbcl ("sbcl" "--dynamic-space-size" "1024000") :coding-system utf-8-unix))))
+
+
+;; rust
+(use-package rust-mode
+  :ensure t
+  :config
+  (setq rust-format-on-save t)
+  :hook
+  ((rust-mode . prettify-symbols-mode)
+   (rust-mode . display-line-numbers-mode)))
+
+;; coq
+(use-package proof-general
+  :ensure t)
+
+(use-package format-all
+  :ensure t
+  :commands format-all-mode
+  :hook (prog-mode . format-all-mode)
+  :config
+  (setq-default format-all-formatters
+                '(("Haskell" fourmolu)
+                  ("Shell"   (shfmt "-i" "4" "-ci")))))
