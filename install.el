@@ -1,8 +1,10 @@
 (require 'package)
 
+(setq package-check-signature nil)
+
 ; find package information from following archives
-(setq package-archives '(("gnu" . "http://elpa.gnu.org/packages/")
-                         ("melpa" . "http://melpa.org/packages/")))
+(setq package-archives '(("gnu" . "https://elpa.gnu.org/packages/")
+                         ("melpa" . "https://melpa.org/packages/")))
 
 (package-initialize)
 (package-refresh-contents)
