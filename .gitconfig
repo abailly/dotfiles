@@ -20,6 +20,8 @@
 	name = Arnaud Bailly
 	email = arnaud@pankzsoft.com
 	signkey = 39AF57FB92B465F8AE6FD1BCCB4571C05D7B9E12
+[commit]
+	gpgsign = true
 [alias]
 	s = status
 	l = log --oneline --graph --decorate

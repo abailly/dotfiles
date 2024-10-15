@@ -19,11 +19,10 @@
 (add-hook 'window-setup-hook
           (lambda nil
             ;; font setting
-            (set-frame-parameter (selected-frame) 'alpha '(100 100))
-            (set-face-attribute 'default nil
-                                :family "mononoki"
-                                :height 160)
-            ))
+          (set-frame-parameter (selected-frame) 'alpha '(100 100))
+           (set-face-attribute 'default nil
+                               :family "Mononoki"
+                               :height 160)))
 
 (setq warning-minimum-level :error)
 
@@ -163,8 +162,8 @@
   :hook ((prog-mode . rainbow-delimiters-mode)))
 
 ;; https://github.com/emacsmirror/expand-region
-(require 'expand-region)
-(global-set-key (kbd "C-=") 'er/expand-region)
+(use-package expand-region
+  :bind ("C-=" . er/expand-region))
 
 ;; helm
 ;; from http://tuhdo.github.io/helm-intro.html
@@ -312,6 +311,7 @@
                 (getenv "HOME") "/.idris2/bin:"
                 (getenv "HOME") "/.ghcup/bin:"
                 (getenv "HOME") "/.radicle/bin:"
+                (getenv "HOME") "/.cargo/bin:"
                 "/usr/local/bin:"
                 (getenv "PATH")))
 
@@ -325,9 +325,8 @@
               (concat (getenv "HOME") "/.ghcup/bin")
               (concat (getenv "HOME") "/.radicle/bin")
               (concat (getenv "HOME") "/.opam/default/bin")
+              (concat (getenv "HOME") "/.cargo/bin")
               "/usr/local/bin" ))))
-
-(use-package nix-sandbox)
 
 ;;LSP Haskell
 (use-package flycheck
@@ -474,7 +473,7 @@
 
 (use-package magit
   :ensure t)
-(global-set-key "\C-xg" 'magit-status)
+(global-set-key "\C-xg" 'magit-status-quick)
 (global-set-key (kbd "C-x M-g") 'magit-dispatch-popup)
 
 ;; markdown
@@ -502,8 +501,8 @@
 
 (defun my-set-margins ()
   "Set margins in current buffer."
-  (setq left-margin-width 10)
-  (setq right-margin-width 10))
+  (setq left-margin-width 20)
+  (setq right-margin-width 20))
 
 (add-hook 'markdown-mode-hook 'my-set-margins)
 
@@ -690,7 +689,6 @@
 ;; ;; configure jsx-tide checker to run after your default jsx checker
 ;; (flycheck-add-mode 'javascript-eslint 'web-mode)
 ;; (flycheck-add-mode 'typescript-tslint 'web-mode)
-
 ;; (flycheck-add-next-checker 'javascript-eslint 'jsx-tide 'append)
 
 ;; (use-package tide
@@ -806,7 +804,6 @@ when refreshing the calendars reaped out of gmail"
   (interactive)
   (let ((url (browse-at-remote-kill)))
     (message "Source code URL: %s" url)))
-
 
 (use-package git-timemachine
   :ensure t
@@ -1017,41 +1014,22 @@ when refreshing the calendars reaped out of gmail"
   (when buffer-file-name
     (setq-local buffer-save-without-query t))
   (add-hook 'before-save-hook 'lsp-format-buffer nil t))
+  (setq inferior-lisp-program "sbcl"))
+
 
 ;; rust
 (use-package rust-mode
   :ensure t
-    :hook
-  ((rust-mode . prettify-symbols-mode)
-   (rust-mode . display-line-numbers-mode)
-   (rust-mode . rk/rustic-mode-hook)))
-
-;; (use-package rustic
-;;   :ensure t
-;;   :after
-;;   (rust-mode)
-;;   :config
-;;   (setq rustic-format-on-save nil)
-;;   :hook
-;;   ((rust-mode . prettify-symbols-mode)
-;;    (rust-mode . display-line-numbers-mode)
-;;    (rust-mode . rk/rustic-mode-hook))
-;;   :custom
-;;   (rustic-cargo-use-last-stored-arguments t))
+ :config
+  (setq rust-format-on-save t)
+  :hook
+  ((rust-mode . lsp-deferred)
+   (rust-mode . prettify-symbols-mode)
+   (rust-mode . display-line-numbers-mode)))
 
 ;; coq
 (use-package proof-general
   :ensure t)
-
-(use-package format-all
-  :ensure t
-  :commands format-all-mode
-  :hook
-  (prog-mode . format-all-mode)
-  :config
-  (setq-default format-all-formatters
-                '(("Haskell" fourmolu)
-                  ("Shell"   (shfmt "-i" "4" "-ci")))))
 
 ;; Uxntal
 
@@ -1072,6 +1050,26 @@ when refreshing the calendars reaped out of gmail"
   (setq lsp-sourcekit-executable "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/sourcekit-lsp"))
 
 (eval-after-load 'flycheck '(flycheck-swift-setup))
+;; (use-package format-all
+;;   :ensure t
+;;   :commands format-all-mode
+;;   :hook
+;;   (prog-mode . format-all-mode)
+;;   :config
+;;   (setq-default format-all-formatters
+;;                 '(("Haskell" fourmolu)
+;;                   ("Rust" rustfmt)
+;;                   ("Cabal" cabalfmt)
+;;                   ("Shell"   (shfmt "-i" "4" "-ci")))))
+
+;; (defun haskell-format-before-save ()
+;;   "Ensure a buffer in Haskell mode is formatted using format-all.
+
+;; Add to 'before-save-hook to be run automatically upon save."
+;;   (interactive)
+;;   (when (eq major-mode 'haskell-mode) (format-all-buffer)))
+
+;; (add-hook 'before-save-hook 'haskell-format-before-save)
 
 (add-to-list 'load-path (concat (getenv "HOME") "/.emacs.d/copilot.el"))
 
@@ -1081,20 +1079,6 @@ when refreshing the calendars reaped out of gmail"
 (define-key copilot-completion-map (kbd "<tab>") 'copilot-accept-completion)
 (define-key copilot-completion-map (kbd "TAB") 'copilot-accept-completion)
 
-(use-package handlebars-sgml-mode
-  :ensure t
-  :config
-  (handlebars-use-mode 'minor))
 
-(use-package tidal
-  :ensure t)
-
-(use-package ement
-  :ensure t)
-
-(use-package ellama
-  :ensure t
-  :bind ("C-c e" . ellama-transient-main-menu))
-
-(provide 'emacs)
+(provide '.emacs)
 ;;; .emacs ends here
