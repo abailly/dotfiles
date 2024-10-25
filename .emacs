@@ -111,6 +111,7 @@
 (global-set-key (kbd "C-x M-a") "α")
 (global-set-key (kbd "C-x M-b") "β")
 (global-set-key (kbd "C-x M-d") "δ")
+(global-set-key (kbd "C-x M-e") "ε")
 (global-set-key (kbd "C-x M-D") "Δ")
 (global-set-key (kbd "C-x M-l") "λ")
 (global-set-key (kbd "C-x M-n") "ν")
@@ -127,6 +128,9 @@
 (global-set-key (kbd "C-x M-S") "Σ")
 (global-set-key (kbd "C-x M-s") "σ")
 (global-set-key (kbd "C-x M-i") (lambda ()
+                                  (interactive)
+                                  (insert "·")))
+(global-set-key (kbd "C-(") (lambda ()
                                   (interactive)
                                   (insert "·")))
 
@@ -326,7 +330,9 @@
   (global-flycheck-mode t))
 
 (use-package yasnippet
-  :ensure t)
+  :ensure t
+  :hook ((prog-mode . yas-minor-mode))
+  )
 
 (defun lsp-format-buffer-for-haskell ()
   (when (eq major-mode 'haskell-mode)
@@ -371,14 +377,16 @@
   ;; with use nix, it takes some time to load and lsp won't find the
   ;; language server until the env is setup properly
   :hook
-  ((haskell-mode . lsp-deferred)
-   (rust-mode . lsp))
+  ((haskell-mode . lsp-deferred))
   :commands (lsp lsp-deferred)
   :custom
-  (lsp-modeline-diagnostics-scope :workspace))
+  (lsp-modeline-diagnostics-scope :workspace)
+  (lsp-rust-analyzer-cargo-watch-command "clippy"))
 
 (use-package lsp-treemacs
   :ensure t)
+
+(lsp-treemacs-sync-mode 1)
 
 (use-package lsp-haskell
   :ensure t
@@ -846,6 +854,7 @@ when refreshing the calendars reaped out of gmail"
   (add-hook 'tuareg-mode-hook #'merlin-mode)
   (add-hook 'merlin-mode-hook #'company-mode)
   ;; we're using flycheck instead
+  (setq merlin-command 'opam)
   (setq merlin-error-after-save nil))
 
 (use-package merlin-eldoc
@@ -858,10 +867,10 @@ when refreshing the calendars reaped out of gmail"
   :config
   (flycheck-ocaml-setup))
 
-(use-package direnv
-  :ensure t
-  :config
-  (direnv-mode))
+;; (use-package direnv
+;;   :ensure t
+;;   :config
+;;   (direnv-mode))
 
 (use-package ocamlformat
   :ensure t
@@ -869,7 +878,7 @@ when refreshing the calendars reaped out of gmail"
   :hook (before-save . ocamlformat-before-save)
   )
 
-(add-to-list 'load-path "/Users/arnaud/.opam/default/share/emacs/site-lisp")
+(add-to-list 'load-path "/Users/arnaud/.opam/cs3110-2024fa/share/emacs/site-lisp")
 (require 'ocp-indent)
 
 (use-package zig-mode
@@ -908,7 +917,13 @@ when refreshing the calendars reaped out of gmail"
    file-notify-descriptors))
 
 (load-file (let ((coding-system-for-read 'utf-8))
-                (shell-command-to-string "agda-mode locate")))
+             (shell-command-to-string "agda-mode locate")))
+
+(setq auto-mode-alist
+   (append
+     '(("\\.agda\\'" . agda2-mode)
+       ("\\.lagda.md\\'" . agda2-mode))
+     auto-mode-alist))
 
 (load (expand-file-name "~/quicklisp/slime-helper.el"))
 
@@ -923,11 +938,21 @@ when refreshing the calendars reaped out of gmail"
 ;; rust
 (use-package rust-mode
   :ensure t
+  :init
+  (setq rust-mode-treesitter-derive t))
+
+(use-package rustic
+  :ensure t
+  :after
+  (rust-mode)
   :config
-  (setq rust-format-on-save t)
+  (setq rustic-format-on-save nil)
   :hook
   ((rust-mode . prettify-symbols-mode)
-   (rust-mode . display-line-numbers-mode)))
+   (rust-mode . display-line-numbers-mode))
+  :custom
+  (rustic-cargo-use-last-stored-arguments t))
+
 
 ;; coq
 (use-package proof-general
@@ -936,10 +961,54 @@ when refreshing the calendars reaped out of gmail"
 (use-package format-all
   :ensure t
   :commands format-all-mode
-  :hook (prog-mode . format-all-mode)
+  :hook
+  (prog-mode . format-all-mode)
   :config
   (setq-default format-all-formatters
                 '(("Haskell" fourmolu)
                   ("Shell"   (shfmt "-i" "4" "-ci")))))
-(provide '.emacs)
+
+(defun haskell-format-before-save ()
+  "Ensure a buffer in Haskell mode is formatted using format-all.
+
+Add to 'before-save-hook to be run automatically upon save."
+  (interactive)
+  (when (eq major-mode 'haskell-mode) (format-all-buffer)))
+
+(add-hook 'before-save-hook 'haskell-format-before-save)
+
+;; Uxntal
+
+(use-package uxntal-mode
+  :ensure t)
+
+;; swift
+(use-package swift-mode
+  :ensure t)
+
+(use-package flycheck-swift
+  :ensure t)
+
+(use-package lsp-sourcekit
+  :ensure t
+  :after lsp-mode
+  :config
+  (setq lsp-sourcekit-executable "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/sourcekit-lsp"))
+
+(eval-after-load 'flycheck '(flycheck-swift-setup))
+
+(add-to-list 'load-path (concat (getenv "HOME") "/.emacs.d/copilot.el"))
+
+(require 'copilot)
+
+(add-hook 'prog-mode-hook 'copilot-mode)
+(define-key copilot-completion-map (kbd "<tab>") 'copilot-accept-completion)
+(define-key copilot-completion-map (kbd "TAB") 'copilot-accept-completion)
+
+(use-package handlebars-sgml-mode
+  :ensure t
+  :config
+  (handlebars-use-mode 'minor))
+
+(provide 'emacs)
 ;;; .emacs ends here
