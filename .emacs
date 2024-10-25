@@ -101,6 +101,7 @@
 (global-set-key (kbd "C-x M-a") "α")
 (global-set-key (kbd "C-x M-b") "β")
 (global-set-key (kbd "C-x M-d") "δ")
+(global-set-key (kbd "C-x M-e") "ε")
 (global-set-key (kbd "C-x M-D") "Δ")
 (global-set-key (kbd "C-x M-l") "λ")
 (global-set-key (kbd "C-x M-n") "ν")
@@ -115,6 +116,9 @@
 (global-set-key (kbd "C-x M-S") "Σ")
 (global-set-key (kbd "C-x M-s") "σ")
 (global-set-key (kbd "C-x M-i") (lambda ()
+                                  (interactive)
+                                  (insert "·")))
+(global-set-key (kbd "C-(") (lambda ()
                                   (interactive)
                                   (insert "·")))
 
@@ -305,7 +309,9 @@
   (global-flycheck-mode t))
 
 (use-package yasnippet
-  :ensure t)
+  :ensure t
+  :hook ((prog-mode . yas-minor-mode))
+  )
 
 ;; from https://blog.sumtypeofway.com/posts/emacs-config.html
 (use-package haskell-mode
@@ -323,14 +329,16 @@
   ;; with use nix, it takes some time to load and lsp won't find the
   ;; language server until the env is setup properly
   :hook
-  ((haskell-mode . lsp-deferred)
-   (rust-mode . lsp))
+  ((haskell-mode . lsp-deferred))
   :commands (lsp lsp-deferred)
   :custom
-  (lsp-modeline-diagnostics-scope :workspace))
+  (lsp-modeline-diagnostics-scope :workspace)
+  (lsp-rust-analyzer-cargo-watch-command "clippy"))
 
 (use-package lsp-treemacs
   :ensure t)
+
+(lsp-treemacs-sync-mode 1)
 
 (use-package lsp-haskell
   :ensure t
@@ -373,14 +381,6 @@
 ;;             (setq haskell-indentation-left-offset 2)
 ;;             (setq haskell-indentation-layout-offset 2)
 ;;             (setq haskell-tags-on-save t)))
-
-;; ormolu formatting
-;; https://github.com/vyorkin/ormolu.el
-(use-package ormolu
-  :ensure t
-  :hook (haskell-mode . ormolu-format-on-save-mode)
-  :bind (:map haskell-mode-map
-              ("C-c r" . ormolu-format-buffer)))
 
 
 (put 'downcase-region 'disabled nil)
@@ -677,14 +677,22 @@ when refreshing the calendars reaped out of gmail"
      (:host "^mac-mini$" :type "github")
      (:host "^gitlab\\.gnome\\.org$" :type "gitlab")))
  '(custom-safe-themes
-   '("8746b94181ba961ebd07c7397339d6a7160ee29c75ca1734aa3744274cbe0370" "5fdc0f5fea841aff2ef6a75e3af0ce4b84389f42e57a93edc3320ac15337dc10" "076ee9f2c64746aac7994b697eb7dbde23ac22988d41ef31b714fc6478fee224" "0a41da554c41c9169bdaba5745468608706c9046231bbbc0d155af1a12f32271" default))
+   '("b5c3c59e2fff6877030996eadaa085a5645cc7597f8876e982eadc923f597aca" "8746b94181ba961ebd07c7397339d6a7160ee29c75ca1734aa3744274cbe0370" "5fdc0f5fea841aff2ef6a75e3af0ce4b84389f42e57a93edc3320ac15337dc10" "076ee9f2c64746aac7994b697eb7dbde23ac22988d41ef31b714fc6478fee224" "0a41da554c41c9169bdaba5745468608706c9046231bbbc0d155af1a12f32271" default))
  '(grep-find-ignored-directories
    '("SCCS" "RCS" "CVS" "MCVS" ".src" ".svn" ".git" ".hg" ".bzr" "_MTN" "_darcs" "{arch}" "node_modules" "docs/build"))
  '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
  '(package-selected-packages
-   '(format-all proof-general graphviz-dot-mode rust-mode slime lsp-treemacs elpher ligature magit-todos hl-todo ansible ocamlformat flycheck-ocaml merlin-eldoc merlin dune tuareg janet-mode dockerfile-mode zig-mode plantuml-mode gnuplot-mode sensei helm-rg git-timemachine browse-at-remote svelte-mode emmet-mode ormolu modus-themes unicode-fonts helm-ag helm-projectile ag direnv lsp nix-sandbox nix-mode yaml-mode xref-js2 web-mode use-package tide terraform-mode rainbow-delimiters prop-menu projectile outshine org-mime magit lsp-ui literate-calc-mode js2-refactor intero helm google-translate expand-region elpy elm-mode elfeed editorconfig crux color-theme))
+   '(rustic epa-file mu4e handlebars-sgml-mode lsp-sourcekit flycheck-swift swift-mode uxntal-mode format-all proof-general graphviz-dot-mode rust-mode slime lsp-treemacs elpher ligature magit-todos hl-todo ansible ocamlformat flycheck-ocaml merlin-eldoc merlin dune tuareg janet-mode dockerfile-mode zig-mode plantuml-mode gnuplot-mode sensei helm-rg git-timemachine browse-at-remote svelte-mode emmet-mode ormolu modus-themes unicode-fonts helm-ag helm-projectile ag direnv lsp nix-sandbox nix-mode yaml-mode xref-js2 web-mode use-package tide terraform-mode rainbow-delimiters prop-menu projectile outshine org-mime magit lsp-ui literate-calc-mode js2-refactor intero helm google-translate expand-region elpy elm-mode elfeed editorconfig crux color-theme))
  '(safe-local-variable-values
-   '((TeX-master . "main")
+   '((intero-targets "minilang:lib" "minilang:exe:mli" "minilang:test:minilang-test")
+     (intero-targets "survey:lib" "survey:exe:quizz" "survey:test:survey-test")
+     (TeX-master . t)
+     (lsp-haskell-formatting-provider . stylish-haskell)
+     (eval add-hook 'before-save-hook
+           (lambda nil
+             (haskell-mode-buffer-apply-command "cabal-fmt"))
+           nil t)
+     (TeX-master . "main")
      (eval highlight-regexp "^ +")
      (lsp-haskell-server-path . "haskell-language-server-wrapper"))))
 (custom-set-faces
@@ -727,6 +735,7 @@ when refreshing the calendars reaped out of gmail"
   (add-hook 'tuareg-mode-hook #'merlin-mode)
   (add-hook 'merlin-mode-hook #'company-mode)
   ;; we're using flycheck instead
+  (setq merlin-command 'opam)
   (setq merlin-error-after-save nil))
 
 (use-package merlin-eldoc
@@ -739,10 +748,10 @@ when refreshing the calendars reaped out of gmail"
   :config
   (flycheck-ocaml-setup))
 
-(use-package direnv
-  :ensure t
-  :config
-  (direnv-mode))
+;; (use-package direnv
+;;   :ensure t
+;;   :config
+;;   (direnv-mode))
 
 (use-package ocamlformat
   :ensure t
@@ -750,7 +759,7 @@ when refreshing the calendars reaped out of gmail"
   :hook (before-save . ocamlformat-before-save)
   )
 
-(add-to-list 'load-path "/Users/arnaud/.opam/default/share/emacs/site-lisp")
+(add-to-list 'load-path "/Users/arnaud/.opam/cs3110-2024fa/share/emacs/site-lisp")
 (require 'ocp-indent)
 
 (use-package zig-mode
@@ -789,7 +798,13 @@ when refreshing the calendars reaped out of gmail"
    file-notify-descriptors))
 
 (load-file (let ((coding-system-for-read 'utf-8))
-                (shell-command-to-string "agda-mode locate")))
+             (shell-command-to-string "agda-mode locate")))
+
+(setq auto-mode-alist
+   (append
+     '(("\\.agda\\'" . agda2-mode)
+       ("\\.lagda.md\\'" . agda2-mode))
+     auto-mode-alist))
 
 (load (expand-file-name "~/quicklisp/slime-helper.el"))
 
@@ -804,11 +819,21 @@ when refreshing the calendars reaped out of gmail"
 ;; rust
 (use-package rust-mode
   :ensure t
+  :init
+  (setq rust-mode-treesitter-derive t))
+
+(use-package rustic
+  :ensure t
+  :after
+  (rust-mode)
   :config
-  (setq rust-format-on-save t)
+  (setq rustic-format-on-save nil)
   :hook
   ((rust-mode . prettify-symbols-mode)
-   (rust-mode . display-line-numbers-mode)))
+   (rust-mode . display-line-numbers-mode))
+  :custom
+  (rustic-cargo-use-last-stored-arguments t))
+
 
 ;; coq
 (use-package proof-general
@@ -817,8 +842,54 @@ when refreshing the calendars reaped out of gmail"
 (use-package format-all
   :ensure t
   :commands format-all-mode
-  :hook (prog-mode . format-all-mode)
+  :hook
+  (prog-mode . format-all-mode)
   :config
   (setq-default format-all-formatters
                 '(("Haskell" fourmolu)
                   ("Shell"   (shfmt "-i" "4" "-ci")))))
+
+(defun haskell-format-before-save ()
+  "Ensure a buffer in Haskell mode is formatted using format-all.
+
+Add to 'before-save-hook to be run automatically upon save."
+  (interactive)
+  (when (eq major-mode 'haskell-mode) (format-all-buffer)))
+
+(add-hook 'before-save-hook 'haskell-format-before-save)
+
+;; Uxntal
+
+(use-package uxntal-mode
+  :ensure t)
+
+;; swift
+(use-package swift-mode
+  :ensure t)
+
+(use-package flycheck-swift
+  :ensure t)
+
+(use-package lsp-sourcekit
+  :ensure t
+  :after lsp-mode
+  :config
+  (setq lsp-sourcekit-executable "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/sourcekit-lsp"))
+
+(eval-after-load 'flycheck '(flycheck-swift-setup))
+
+(add-to-list 'load-path (concat (getenv "HOME") "/.emacs.d/copilot.el"))
+
+(require 'copilot)
+
+(add-hook 'prog-mode-hook 'copilot-mode)
+(define-key copilot-completion-map (kbd "<tab>") 'copilot-accept-completion)
+(define-key copilot-completion-map (kbd "TAB") 'copilot-accept-completion)
+
+(use-package handlebars-sgml-mode
+  :ensure t
+  :config
+  (handlebars-use-mode 'minor))
+
+(provide 'emacs)
+;;; .emacs ends here
