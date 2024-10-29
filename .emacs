@@ -476,6 +476,15 @@
 
 (add-hook 'markdown-mode-hook 'outline-minor-mode)
 
+(defun my-set-margins ()
+  "Set margins in current buffer."
+  (setq left-margin-width 10)
+  (setq right-margin-width 10))
+
+(add-hook 'markdown-mode-hook 'my-set-margins)
+
+(add-hook 'markdown-mode-hook 'outline-minor-mode)
+
 ;; Python
 ;; requires (package-install 'elpy)
 ;; https://github.com/jorgenschaefer/elpy
@@ -771,13 +780,6 @@ when refreshing the calendars reaped out of gmail"
   :ensure t
   :bind
   (("C-c M-m" . git-timemachine)))
-
-(use-package rust-mode
-  :ensure t
-  :custom
-  (rust-format-on-save t)
-  :hook
-  ((rust-mode . lsp)))
 
 (use-package go-mode
   :ensure t
