@@ -19,12 +19,13 @@
 (add-hook 'window-setup-hook
           (lambda nil
             ;; font setting
-            (set-frame-parameter (selected-frame) 'alpha '(100 100)g)
+            (set-frame-parameter (selected-frame) 'alpha '(100 100))
             (set-face-attribute 'default nil
-                                :family "Hack"
-                                :height 140)
-
+                                :family "mononoki"
+                                :height 160)
             ))
+
+(setq warning-minimum-level :error)
 
 (use-package unicode-fonts
   :ensure t
@@ -58,9 +59,9 @@
 
 
 (use-package unicode-fonts
-   :ensure t
-   :config
-   (unicode-fonts-setup))
+  :ensure t
+  :config
+  (unicode-fonts-setup))
 
 (use-package modus-themes
   :ensure t
@@ -130,9 +131,10 @@
 (global-set-key (kbd "C-x M-i") (lambda ()
                                   (interactive)
                                   (insert "·")))
+(global-set-key (kbd "C-x M-A") "₳")
 (global-set-key (kbd "C-(") (lambda ()
-                                  (interactive)
-                                  (insert "·")))
+                              (interactive)
+                              (insert "·")))
 
 (global-set-key (kbd "C-c C-/") 'comment-or-uncomment-region)
 
@@ -307,6 +309,7 @@
                 (getenv "HOME") "/.cabal/bin:"
                 (getenv "HOME") "/.idris2/bin:"
                 (getenv "HOME") "/.ghcup/bin:"
+                (getenv "HOME") "/.radicle/bin:"
                 "/usr/local/bin:"
                 (getenv "PATH")))
 
@@ -318,6 +321,7 @@
               (concat (getenv "HOME") "/.cabal/bin")
               (concat (getenv "HOME") "/.idris2/bin")
               (concat (getenv "HOME") "/.ghcup/bin")
+              (concat (getenv "HOME") "/.radicle/bin")
               (concat (getenv "HOME") "/.opam/default/bin")
               "/usr/local/bin" ))))
 
@@ -334,10 +338,6 @@
   :hook ((prog-mode . yas-minor-mode))
   )
 
-(defun lsp-format-buffer-for-haskell ()
-  (when (eq major-mode 'haskell-mode)
-    (lsp-format-buffer)))
-
 (defun format-cabal-buffer ()
   (when (eq major-mode 'haskell-cabal-mode)
     (haskell-mode-buffer-apply-command "cabal-fmt")))
@@ -351,7 +351,6 @@
 (use-package haskell-mode
   :ensure t
   :init
-  (add-hook 'before-save-hook #'lsp-format-buffer-for-haskell)
   (add-hook 'before-save-hook #'format-cabal-buffer)
 
   :config
@@ -448,6 +447,23 @@
 ;; (setq elm-tags-exclude-elm-stuff nil)
 
 ;; magit
+
+(defun endless/visit-pull-request-url ()
+  "Visit the current branch's PR on Github."
+  (interactive)
+  (browse-url
+   (format "https://github.com/%s/pull/new/%s"
+           (replace-regexp-in-string
+            "\\`.+github\\.com:\\(.+\\)\\.git\\'" "\\1"
+            (magit-get "remote"
+                       (magit-get "branch" (magit-get-current-branch) "remote")
+                       "url"))
+           (magit-get-current-branch))))
+
+(eval-after-load 'magit
+  '(define-key magit-mode-map "v"
+               #'endless/visit-pull-request-url))
+
 (use-package magit
   :ensure t)
 (global-set-key "\C-xg" 'magit-status)
@@ -809,13 +825,25 @@ when refreshing the calendars reaped out of gmail"
      (:host "^mac-mini$" :type "github")
      (:host "^gitlab\\.gnome\\.org$" :type "gitlab")))
  '(custom-safe-themes
-   '("aa72e5b41780bfff2ff55d0cc6fcd4b42153386088a4025fed606c1099c2d9b8" "31f1723fb10ec4b4d2d79b65bcad0a19e03270fe290a3fc4b95886f18e79ac2f" "0568a5426239e65aab5e7c48fa1abde81130a87ddf7f942613bf5e13bf79686b" "076ee9f2c64746aac7994b697eb7dbde23ac22988d41ef31b714fc6478fee224" "0f7fa4835d02a927d7d738a0d2d464c38be079913f9d4aba9c97f054e67b8db9" default))
- '(lsp-haskell-server-path "haskell-language-server")
+   '("b5c3c59e2fff6877030996eadaa085a5645cc7597f8876e982eadc923f597aca" "8746b94181ba961ebd07c7397339d6a7160ee29c75ca1734aa3744274cbe0370" "5fdc0f5fea841aff2ef6a75e3af0ce4b84389f42e57a93edc3320ac15337dc10" "076ee9f2c64746aac7994b697eb7dbde23ac22988d41ef31b714fc6478fee224" "0a41da554c41c9169bdaba5745468608706c9046231bbbc0d155af1a12f32271" default))
+ '(grep-find-ignored-directories
+   '("SCCS" "RCS" "CVS" "MCVS" ".src" ".svn" ".git" ".hg" ".bzr" "_MTN" "_darcs" "{arch}" "node_modules" "docs/build"))
+ '(haskell-stylish-on-save nil)
+ '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
  '(package-selected-packages
-   '(magit-todos helm-lsp go-mode rust-mode vline hl-fill-column haskell-cabal-mode git-timemachine browse-at-remote hl-todo unicode-fonts modus-themes monokai helm-ag ag direnv lsp nix-sandbox nix-mode yaml-mode xref-js2 web-mode use-package tide terraform-mode rainbow-delimiters prop-menu projectile outshine org-mime magit lsp-ui lsp-haskell literate-calc-mode js2-refactor intero helm google-translate expand-region elpy elm-mode elfeed editorconfig crux color-theme))
+   '(tree-sitter-langs ellama ement tidal doom-themes rustic epa-file mu4e handlebars-sgml-mode lsp-sourcekit flycheck-swift swift-mode uxntal-mode format-all proof-general graphviz-dot-mode rust-mode slime lsp-treemacs elpher ligature magit-todos hl-todo ansible ocamlformat flycheck-ocaml merlin-eldoc merlin dune tuareg janet-mode dockerfile-mode zig-mode plantuml-mode gnuplot-mode sensei helm-rg git-timemachine browse-at-remote svelte-mode emmet-mode ormolu modus-themes unicode-fonts helm-ag helm-projectile ag direnv lsp nix-sandbox nix-mode yaml-mode xref-js2 web-mode use-package tide terraform-mode rainbow-delimiters prop-menu projectile outshine org-mime magit lsp-ui literate-calc-mode js2-refactor intero helm google-translate expand-region elpy elm-mode elfeed editorconfig crux color-theme))
  '(safe-local-variable-values
-   '((lsp-haskell-fourmolu-on nil)
-     (lsp-haskell-formatting-provider . "ormolu"))))
+   '((intero-targets "minilang:lib" "minilang:exe:mli" "minilang:test:minilang-test")
+     (intero-targets "survey:lib" "survey:exe:quizz" "survey:test:survey-test")
+     (TeX-master . t)
+     (lsp-haskell-formatting-provider . stylish-haskell)
+     (eval add-hook 'before-save-hook
+           (lambda nil
+             (haskell-mode-buffer-apply-command "cabal-fmt"))
+           nil t)
+     (TeX-master . "main")
+     (eval highlight-regexp "^ +")
+     (lsp-haskell-server-path . "haskell-language-server-wrapper"))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -922,10 +950,10 @@ when refreshing the calendars reaped out of gmail"
              (shell-command-to-string "agda-mode locate")))
 
 (setq auto-mode-alist
-   (append
-     '(("\\.agda\\'" . agda2-mode)
-       ("\\.lagda.md\\'" . agda2-mode))
-     auto-mode-alist))
+      (append
+       '(("\\.agda\\'" . agda2-mode)
+         ("\\.lagda.md\\'" . agda2-mode))
+       auto-mode-alist))
 
 (load (expand-file-name "~/quicklisp/slime-helper.el"))
 
@@ -934,7 +962,7 @@ when refreshing the calendars reaped out of gmail"
   :ensure t
   :config
   (setq slime-lisp-implementations
-      '((sbcl ("sbcl" "--dynamic-space-size" "1024000") :coding-system utf-8-unix))))
+        '((sbcl ("sbcl" "--dynamic-space-size" "1024000") :coding-system utf-8-unix))))
 
 
 ;; rust
@@ -970,15 +998,6 @@ when refreshing the calendars reaped out of gmail"
                 '(("Haskell" fourmolu)
                   ("Shell"   (shfmt "-i" "4" "-ci")))))
 
-(defun haskell-format-before-save ()
-  "Ensure a buffer in Haskell mode is formatted using format-all.
-
-Add to 'before-save-hook to be run automatically upon save."
-  (interactive)
-  (when (eq major-mode 'haskell-mode) (format-all-buffer)))
-
-(add-hook 'before-save-hook 'haskell-format-before-save)
-
 ;; Uxntal
 
 (use-package uxntal-mode
@@ -1011,6 +1030,16 @@ Add to 'before-save-hook to be run automatically upon save."
   :ensure t
   :config
   (handlebars-use-mode 'minor))
+
+(use-package tidal
+  :ensure t)
+
+(use-package ement
+  :ensure t)
+
+(use-package ellama
+  :ensure t
+  :bind ("C-c e" . ellama-transient-main-menu))
 
 (provide 'emacs)
 ;;; .emacs ends here
