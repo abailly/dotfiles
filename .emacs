@@ -27,6 +27,8 @@
 
 (setq warning-minimum-level :error)
 
+(add-to-list 'global-mode-string '(" %i"))
+
 (use-package unicode-fonts
   :ensure t
   :config
@@ -336,7 +338,22 @@
 (use-package yasnippet
   :ensure t
   :hook ((prog-mode . yas-minor-mode))
-  )
+  :config
+  (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets")
+  (yas-global-mode 1))
+
+(defun amaru/rust-header ()
+  (interactive)
+  (yas-expand-snippet
+   (yas-lookup-snippet "amaru-rust-header" 'rust-mode)))
+
+(use-package autoinsert
+  :ensure t
+  :config
+  (setq auto-insert-query nil)
+  (auto-insert-mode 1)
+  (add-hook 'find-file-hook 'auto-insert))
+
 
 (defun format-cabal-buffer ()
   (when (eq major-mode 'haskell-cabal-mode)
@@ -350,8 +367,6 @@
 ;; from https://blog.sumtypeofway.com/posts/emacs-config.html
 (use-package haskell-mode
   :ensure t
-  :init
-  (add-hook 'before-save-hook #'format-cabal-buffer)
 
   :config
   ;; haskell-mode doesn't know about newer GHC features.
@@ -386,13 +401,6 @@
   :ensure t)
 
 (lsp-treemacs-sync-mode 1)
-
-(use-package lsp-haskell
-  :ensure t
-  :custom
-  (lsp-haskell-formatting-provider "fourmolu"))
-
-(setq lsp-log-io 't)
 
 (use-package lsp-treemacs
   :ensure t)
@@ -605,6 +613,7 @@
   :after tree-sitter)
 
 (use-package typescript-mode
+  :ensure t
   :after tree-sitter
   :config
   ;; we choose this instead of tsx-mode so that eglot can automatically figure out language for server
@@ -620,13 +629,20 @@
 
 ;; auto-format different source code files extremely intelligently
 ;; https://github.com/radian-software/apheleia
-(use-package apheleia
-  :ensure t
-  :config
-  (apheleia-global-mode +1))
+;; (use-package apheleia
+;;   :ensure t
+;;   :config
+;;   (apheleia-global-mode +1))
 
 (use-package eglot
-  :ensure t)
+  :ensure t
+  :bind (:map eglot-mode-map
+	      ("s-l a" . eglot-code-actions)
+	      ("s-l r" . eglot-rename)
+	      ("s-l f" . eglot-format)
+	      ("s-l F" . eglot-format-buffer)
+	      ;; sometimes ionide acts up
+	      ("s-l R" . eglot-reconnect)))
 
 ;; (use-package tide
 ;;   :ensure t)
@@ -825,24 +841,48 @@ when refreshing the calendars reaped out of gmail"
      (:host "^mac-mini$" :type "github")
      (:host "^gitlab\\.gnome\\.org$" :type "gitlab")))
  '(custom-safe-themes
-   '("b5c3c59e2fff6877030996eadaa085a5645cc7597f8876e982eadc923f597aca" "8746b94181ba961ebd07c7397339d6a7160ee29c75ca1734aa3744274cbe0370" "5fdc0f5fea841aff2ef6a75e3af0ce4b84389f42e57a93edc3320ac15337dc10" "076ee9f2c64746aac7994b697eb7dbde23ac22988d41ef31b714fc6478fee224" "0a41da554c41c9169bdaba5745468608706c9046231bbbc0d155af1a12f32271" default))
+   '("b5c3c59e2fff6877030996eadaa085a5645cc7597f8876e982eadc923f597aca"
+     "8746b94181ba961ebd07c7397339d6a7160ee29c75ca1734aa3744274cbe0370"
+     "5fdc0f5fea841aff2ef6a75e3af0ce4b84389f42e57a93edc3320ac15337dc10"
+     "076ee9f2c64746aac7994b697eb7dbde23ac22988d41ef31b714fc6478fee224"
+     "0a41da554c41c9169bdaba5745468608706c9046231bbbc0d155af1a12f32271"
+     default))
  '(grep-find-ignored-directories
-   '("SCCS" "RCS" "CVS" "MCVS" ".src" ".svn" ".git" ".hg" ".bzr" "_MTN" "_darcs" "{arch}" "node_modules" "docs/build"))
+   '("SCCS" "RCS" "CVS" "MCVS" ".src" ".svn" ".git" ".hg" ".bzr" "_MTN"
+     "_darcs" "{arch}" "node_modules" "docs/build"))
  '(haskell-stylish-on-save nil)
  '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
  '(package-selected-packages
-   '(tree-sitter-langs ellama ement tidal doom-themes rustic epa-file mu4e handlebars-sgml-mode lsp-sourcekit flycheck-swift swift-mode uxntal-mode format-all proof-general graphviz-dot-mode rust-mode slime lsp-treemacs elpher ligature magit-todos hl-todo ansible ocamlformat flycheck-ocaml merlin-eldoc merlin dune tuareg janet-mode dockerfile-mode zig-mode plantuml-mode gnuplot-mode sensei helm-rg git-timemachine browse-at-remote svelte-mode emmet-mode ormolu modus-themes unicode-fonts helm-ag helm-projectile ag direnv lsp nix-sandbox nix-mode yaml-mode xref-js2 web-mode use-package tide terraform-mode rainbow-delimiters prop-menu projectile outshine org-mime magit lsp-ui literate-calc-mode js2-refactor intero helm google-translate expand-region elpy elm-mode elfeed editorconfig crux color-theme))
+   '(vline tree-sitter-langs ellama ement tidal doom-themes rustic
+           epa-file mu4e handlebars-sgml-mode lsp-sourcekit
+           flycheck-swift swift-mode uxntal-mode format-all
+           proof-general graphviz-dot-mode rust-mode slime
+           lsp-treemacs elpher ligature magit-todos hl-todo ansible
+           ocamlformat flycheck-ocaml merlin-eldoc merlin dune tuareg
+           janet-mode dockerfile-mode zig-mode plantuml-mode
+           gnuplot-mode sensei helm-rg git-timemachine
+           browse-at-remote svelte-mode emmet-mode ormolu modus-themes
+           unicode-fonts helm-ag helm-projectile ag direnv lsp
+           nix-sandbox nix-mode yaml-mode xref-js2 web-mode
+           use-package tide terraform-mode rainbow-delimiters
+           prop-menu projectile outshine org-mime magit lsp-ui
+           literate-calc-mode js2-refactor intero helm
+           google-translate expand-region elpy elm-mode elfeed
+           editorconfig crux color-theme))
  '(safe-local-variable-values
-   '((intero-targets "minilang:lib" "minilang:exe:mli" "minilang:test:minilang-test")
-     (intero-targets "survey:lib" "survey:exe:quizz" "survey:test:survey-test")
+   '((eval add-to-list 'auto-insert-alist '("\\.rs$" . amaru/rust-header))
+     (auto-insert-alist '("\\.rs$" . [amaru/rust-header]))
+     (auto-insert-alist '("\\.rs$" . [amaru/rustheader]))
+     (intero-targets "minilang:lib" "minilang:exe:mli"
+                     "minilang:test:minilang-test")
+     (intero-targets "survey:lib" "survey:exe:quizz"
+                     "survey:test:survey-test")
      (TeX-master . t)
      (lsp-haskell-formatting-provider . stylish-haskell)
      (eval add-hook 'before-save-hook
-           (lambda nil
-             (haskell-mode-buffer-apply-command "cabal-fmt"))
+           (lambda nil (haskell-mode-buffer-apply-command "cabal-fmt"))
            nil t)
-     (TeX-master . "main")
-     (eval highlight-regexp "^ +")
+     (TeX-master . "main") (eval highlight-regexp "^ +")
      (lsp-haskell-server-path . "haskell-language-server-wrapper"))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -946,14 +986,18 @@ when refreshing the calendars reaped out of gmail"
      (file-notify-rm-watch key))
    file-notify-descriptors))
 
-(load-file (let ((coding-system-for-read 'utf-8))
-             (shell-command-to-string "agda-mode locate")))
+;; agda-mode is distributed as part of agda, which I removed from
+;; my local environment as it was installed from brew and brought
+;; with it useless dependencies, eg. Emacs !
 
-(setq auto-mode-alist
-      (append
-       '(("\\.agda\\'" . agda2-mode)
-         ("\\.lagda.md\\'" . agda2-mode))
-       auto-mode-alist))
+;; (load-file (let ((coding-system-for-read 'utf-8))
+;;              (shell-command-to-string "agda-mode locate")))
+
+;; (setq auto-mode-alist
+;;       (append
+;;        '(("\\.agda\\'" . agda2-mode)
+;;          ("\\.lagda.md\\'" . agda2-mode))
+;;        auto-mode-alist))
 
 (load (expand-file-name "~/quicklisp/slime-helper.el"))
 
@@ -965,24 +1009,35 @@ when refreshing the calendars reaped out of gmail"
         '((sbcl ("sbcl" "--dynamic-space-size" "1024000") :coding-system utf-8-unix))))
 
 
+(defun rk/rustic-mode-hook ()
+  ;; so that run C-c C-c C-r works without having to confirm, but don't try to
+  ;; save rust buffers that are not file visiting. Once
+  ;; https://github.com/brotzeit/rustic/issues/253 has been resolved this should
+  ;; no longer be necessary.
+  (when buffer-file-name
+    (setq-local buffer-save-without-query t))
+  (add-hook 'before-save-hook 'lsp-format-buffer nil t))
+
 ;; rust
 (use-package rust-mode
   :ensure t
-  :init
-  (setq rust-mode-treesitter-derive t))
-
-(use-package rustic
-  :ensure t
-  :after
-  (rust-mode)
-  :config
-  (setq rustic-format-on-save nil)
-  :hook
+    :hook
   ((rust-mode . prettify-symbols-mode)
-   (rust-mode . display-line-numbers-mode))
-  :custom
-  (rustic-cargo-use-last-stored-arguments t))
+   (rust-mode . display-line-numbers-mode)
+   (rust-mode . rk/rustic-mode-hook)))
 
+;; (use-package rustic
+;;   :ensure t
+;;   :after
+;;   (rust-mode)
+;;   :config
+;;   (setq rustic-format-on-save nil)
+;;   :hook
+;;   ((rust-mode . prettify-symbols-mode)
+;;    (rust-mode . display-line-numbers-mode)
+;;    (rust-mode . rk/rustic-mode-hook))
+;;   :custom
+;;   (rustic-cargo-use-last-stored-arguments t))
 
 ;; coq
 (use-package proof-general

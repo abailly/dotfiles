@@ -1,6 +1,24 @@
+[column]
+  ui = auto
+[branch]
+  sort = -committerdate
+[tag]
+  sort = version:refname
+[init]
+  defaultBranch = main
+[diff]
+  algorithm = histogram
+  colorMoved = plain
+  mnemonicPrefix = true
+  renames = true
+[help]
+  autocorrect = prompt
+[rerere]
+  enabled = true
+  autoupdate = true
 [user]
 	name = Arnaud Bailly
-	email = arnaud.bailly@iohk.io
+	email = arnaud@pankzsoft.com
 	signkey = 39AF57FB92B465F8AE6FD1BCCB4571C05D7B9E12
 [alias]
 	s = status
@@ -9,8 +27,20 @@
 	co = checkout
 	sub = submodule
 [push]
-	default = simple
+  default = simple
+  autoSetupRemote = true
+  followTags = true
+[fetch]
+  prune = true
+  pruneTags = true
+  all = true
 [core]
 	autocrlf = input
+  excludesfile = ~/.gitignore
 [commit]
 	gpgsign = true
+  verbose = true
+[rebase]
+  autoSquash = true
+  autoStash = true
+  updateRefs = true
