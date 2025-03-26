@@ -152,11 +152,6 @@
 
 (show-paren-mode)
 
-(use-package direnv
-  :ensure t
-  :config
-  (direnv-mode))
-
 (use-package rainbow-delimiters
   :ensure t
   :hook ((prog-mode . rainbow-delimiters-mode)))
@@ -945,9 +940,6 @@ when refreshing the calendars reaped out of gmail"
   :hook (before-save . ocamlformat-before-save)
   )
 
-(add-to-list 'load-path "/Users/arnaud/.opam/cs3110-2024fa/share/emacs/site-lisp")
-(require 'ocp-indent)
-
 (use-package zig-mode
   :ensure t)
 
@@ -1014,18 +1006,20 @@ when refreshing the calendars reaped out of gmail"
   (when buffer-file-name
     (setq-local buffer-save-without-query t))
   (add-hook 'before-save-hook 'lsp-format-buffer nil t))
-  (setq inferior-lisp-program "sbcl"))
+
+(setq inferior-lisp-program "sbcl"))
 
 
 ;; rust
 (use-package rust-mode
   :ensure t
- :config
+  :config
   (setq rust-format-on-save t)
   :hook
-  ((rust-mode . lsp-deferred)
+  ((rust-mode . eglot-ensure)
    (rust-mode . prettify-symbols-mode)
-   (rust-mode . display-line-numbers-mode)))
+   (rust-mode . display-line-numbers-mode)
+   (rust-mode . rk/rustic-mode-hook)))
 
 ;; coq
 (use-package proof-general
