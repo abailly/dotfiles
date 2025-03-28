@@ -1073,6 +1073,18 @@ when refreshing the calendars reaped out of gmail"
 (define-key copilot-completion-map (kbd "<tab>") 'copilot-accept-completion)
 (define-key copilot-completion-map (kbd "TAB") 'copilot-accept-completion)
 
+(use-package ement
+  :ensure t)
 
-(provide '.emacs)
+(use-package ellama
+  :ensure t
+  :bind ("C-c e" . ellama-transient-main-menu))
+
+;; aider
+(use-package aider
+  :ensure t
+  :config
+  (setq aider-args '("--model" "sonnet")))
+
+(provide 'emacs)
 ;;; .emacs ends here
