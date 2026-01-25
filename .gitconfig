@@ -28,6 +28,7 @@
 	ci = commit
 	co = checkout
 	sub = submodule
+	patch = push -o patch.draft rad HEAD:refs/patches
 [push]
   default = simple
   autoSetupRemote = true
